@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { ProfileForm } from '../components/ProfileForm';
-import { SyncCard } from '../components/SyncCard';
 import {
   ACTIVITY_LEVELS,
   ageAt,
@@ -220,8 +219,6 @@ export function YouPage({ profile }: { profile: Profile }) {
           <p className="muted">目標日を過ぎています。目標達成日を更新してください。</p>
         )}
       </div>
-
-      <SyncCard />
 
       <p className="legal-links">
         <a href={`${import.meta.env.BASE_URL}legal/privacy.html`} target="_blank" rel="noreferrer">

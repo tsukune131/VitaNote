@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from './db';
 import { Onboarding } from './components/Onboarding';
-import { StepsImportBanner } from './components/StepsImportBanner';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
 
@@ -52,8 +51,6 @@ export default function App() {
       <div className="app-header">
         <h1>WeightNote</h1>
       </div>
-
-      <StepsImportBanner profileId={profile.id} />
 
       {tab === 'you' && <YouPage profile={profile} />}
       {tab === 'record' && <RecordPage profile={profile} />}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, removeRecord, type Food, type Profile } from '../db';
+import { db, type Food, type Profile } from '../db';
 import { StreakSummary } from '../components/StreakSummary';
 import {
   ageAt,
@@ -267,7 +267,7 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
                       <button
                         className="chip-x"
                         aria-label={`${f.name}を削除`}
-                        onClick={() => void removeRecord('foods', f.id)}
+                        onClick={() => void db.foods.delete(f.id)}
                       >
                         ×
                       </button>
@@ -384,7 +384,7 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
               <span>
                 {l.time} <strong>{l.ml}ml</strong>
               </span>
-              <button className="danger" onClick={() => void removeRecord('waterLogs', l.id)}>
+              <button className="danger" onClick={() => void db.waterLogs.delete(l.id)}>
                 削除
               </button>
             </div>
@@ -538,7 +538,7 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
               <span>
                 {it.name} <strong>{it.kcal}kcal</strong>
               </span>
-              <button className="danger" onClick={() => void removeRecord('exercises', it.id)}>
+              <button className="danger" onClick={() => void db.exercises.delete(it.id)}>
                 削除
               </button>
             </div>
@@ -566,7 +566,7 @@ function NoteSection({ profileId, date }: { profileId: number; date: string }) {
     const t = text.trim();
     if (entry) {
       if (t) await db.notes.update(entry.id, { text: t });
-      else await removeRecord('notes', entry.id); // 空にして保存したら消す
+      else await db.notes.delete(entry.id); // 空にして保存したら消す
     } else if (t) {
       await db.notes.add({ profileId, date, text: t } as never);
     }
