@@ -52,6 +52,21 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             <li>推移をグラフでふりかえり</li>
           </ul>
           <button onClick={() => setStep('profile')}>はじめる</button>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            はじめると
+            <a href={`${import.meta.env.BASE_URL}legal/terms.html`} target="_blank" rel="noreferrer">
+              利用規約
+            </a>
+            と
+            <a
+              href={`${import.meta.env.BASE_URL}legal/privacy.html`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              プライバシーポリシー
+            </a>
+            に同意したものとみなされます。
+          </p>
         </div>
       )}
 

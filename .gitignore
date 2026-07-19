@@ -25,3 +25,9 @@ dist-ssr
 
 # Claude Code local settings
 .claude/
+
+# Capacitor build artifacts
+ios/App/App/public
+ios/App/output
+ios/App/Pods
+ios/DerivedData

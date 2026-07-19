@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { ProfileForm } from '../components/ProfileForm';
+import { SyncCard } from '../components/SyncCard';
 import {
   ACTIVITY_LEVELS,
   ageAt,
@@ -220,6 +221,17 @@ export function YouPage({ profile }: { profile: Profile }) {
         )}
       </div>
 
+      <SyncCard />
+
+      <p className="legal-links">
+        <a href={`${import.meta.env.BASE_URL}legal/privacy.html`} target="_blank" rel="noreferrer">
+          プライバシーポリシー
+        </a>
+        ・
+        <a href={`${import.meta.env.BASE_URL}legal/terms.html`} target="_blank" rel="noreferrer">
+          利用規約
+        </a>
+      </p>
     </div>
   );
 }

@@ -694,6 +694,17 @@ button:disabled {
   font-weight: 400;
 }
 
+.legal-links {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0 8px;
+}
+
+.legal-links a {
+  color: var(--muted);
+}
+
 .empty-note {
   text-align: center;
   color: var(--muted);

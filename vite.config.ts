@@ -2,11 +2,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
-  // GitHub Pages (https://<user>.github.io/WeightNote/) のサブパス配信用
-  base: '/WeightNote/',
+// mode 'capacitor' はネイティブアプリ用ビルド:
+// 相対パス配信+Service Worker(PWA)なし。通常はGitHub Pagesのサブパス配信
+export default defineConfig(({ mode }) => ({
+  base: mode === 'capacitor' ? './' : '/WeightNote/',
   plugins: [
     react(),
+    ...(mode === 'capacitor'
+      ? []
+      : [
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
@@ -25,5 +29,6 @@ export default defineConfig({
         ],
       },
     }),
+        ]),
   ],
-});
+}));

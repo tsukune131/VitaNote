@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.3.1",
@@ -20,8 +22,12 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/local-notifications": "^8.2.1",
+    "@sentry/react": "^10.66.0",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
+    "firebase": "^12.16.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "recharts": "^3.9.2"
