@@ -694,6 +694,16 @@ button:disabled {
   font-weight: 400;
 }
 
+.import-banner {
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
 .legal-links {
   text-align: center;
   font-size: 11px;
