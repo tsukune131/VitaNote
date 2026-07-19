@@ -13,7 +13,15 @@ import {
   stepsToKcal,
   totalKcalToGoal,
 } from '../lib/calc';
-import { addDays, formatDateShort, nowTimeStr, todayStr } from '../lib/date';
+import {
+  addDays,
+  dayOfMonthOf,
+  formatDateShort,
+  isLastDayOfMonth,
+  nowTimeStr,
+  todayStr,
+  weekdayOf,
+} from '../lib/date';
 import { tipForDate } from '../lib/tips';
 
 export function RecordPage({ profile }: { profile: Profile }) {
@@ -226,7 +234,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     if (!checked) setShowMedManager(false);
   }
 
-  async function toggleTaken(medicationId: number, meal: MealSlot, taken: boolean) {
+  async function toggleTaken(medicationId: number, meal: MealSlot | undefined, taken: boolean) {
     const existing = medLogs?.find((l) => l.medicationId === medicationId && l.meal === meal);
     if (taken && !existing) {
       await db.medicationLogs.add({ profileId, date, medicationId, meal } as never);
@@ -234,6 +242,15 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
       await db.medicationLogs.delete(existing.id);
     }
   }
+
+  const mealMedications = (medications ?? []).filter((m) => (m.frequency ?? 'meal') === 'meal');
+  const otherMedications = (medications ?? []).filter((m) => {
+    const freq = m.frequency ?? 'meal';
+    if (freq === 'weekly') return (m.weekday ?? 0) === weekdayOf(date);
+    if (freq === 'monthly')
+      return m.dayOfMonth === dayOfMonthOf(date) || ((m.dayOfMonth ?? 1) > 28 && isLastDayOfMonth(date));
+    return false;
+  });
 
   async function save() {
     const data = {
@@ -276,8 +293,31 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
           {showMedManager && <MedicationManager profileId={profileId} />}
         </>
       )}
+      {useMedication && otherMedications.length > 0 && (
+        <div className="medicine-box">
+          <div className="muted" style={{ fontSize: 11 }}>
+            きょうのその他のお薬
+          </div>
+          {otherMedications.map((m) => {
+            const taken = medLogs?.some((l) => l.medicationId === m.id && l.meal == null) ?? false;
+            return (
+              <label className="checkbox-inline medicine-row" key={m.id}>
+                <input
+                  type="checkbox"
+                  checked={taken}
+                  onChange={(e) => void toggleTaken(m.id, undefined, e.target.checked)}
+                />
+                💊 {m.name}
+                <span className="muted">
+                  ({(m.frequency ?? 'meal') === 'weekly' ? '週1回' : '月1回'})
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
       {MEAL_FIELDS.map(([key, label]) => {
-        const medsForMeal = (medications ?? []).filter((m) => m.meals.includes(key));
+        const medsForMeal = mealMedications.filter((m) => (m.meals ?? []).includes(key));
         return (
         <div key={key}>
           <div className="row" style={{ alignItems: 'flex-end' }}>

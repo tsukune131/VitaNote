@@ -17,23 +17,29 @@ export interface Profile {
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type MedicationTiming = 'before' | 'after';
+/** meal: 食事ごと(食前後) / weekly: 週1回(曜日指定) / monthly: 月1回(日にち指定) */
+export type MedicationFrequency = 'meal' | 'weekly' | 'monthly';
 
 /** 薬の登録情報(日を跨いで引き継がれるマスタ) */
 export interface Medication {
   id: number;
   profileId: number;
   name: string;
-  timing: MedicationTiming; // 食前・食後
-  meals: MealSlot[]; // 対象の食事(複数可)
+  /** 未設定の既存データは'meal'として扱う */
+  frequency?: MedicationFrequency;
+  timing?: MedicationTiming; // 食前・食後(frequency='meal'のみ)
+  meals?: MealSlot[]; // 対象の食事(frequency='meal'のみ)
+  weekday?: number; // 0(日)〜6(土)。frequency='weekly'のみ
+  dayOfMonth?: number; // 1〜31。frequency='monthly'のみ
 }
 
-/** ある日・ある食事で、その薬を飲んだ記録(存在すれば服用済み) */
+/** ある日、その薬を飲んだ記録(存在すれば服用済み)。食事ひもづけの薬のみmealを持つ */
 export interface MedicationLog {
   id: number;
   profileId: number;
   date: string;
   medicationId: number;
-  meal: MealSlot;
+  meal?: MealSlot;
 }
 
 export interface WeightEntry {

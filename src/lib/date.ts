@@ -53,9 +53,25 @@ export function formatMonth(monthStr: string): string {
   return `${y}年${m}月`;
 }
 
+export const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
 /** 「7/19(日)」表示用 */
 export function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-  return `${d.getMonth() + 1}/${d.getDate()}(${w})`;
+  return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAY_LABELS[d.getDay()]})`;
+}
+
+/** YYYY-MM-DDの曜日(0=日〜6=土) */
+export function weekdayOf(dateStr: string): number {
+  return new Date(dateStr + 'T00:00:00').getDay();
+}
+
+/** YYYY-MM-DDの日にち(1〜31) */
+export function dayOfMonthOf(dateStr: string): number {
+  return Number(dateStr.slice(8, 10));
+}
+
+/** その月の最終日かどうか(31日指定の薬を30日までの月でも月末に扱うため) */
+export function isLastDayOfMonth(dateStr: string): boolean {
+  return dayOfMonthOf(dateStr) === daysInMonth(dateStr.slice(0, 7));
 }
