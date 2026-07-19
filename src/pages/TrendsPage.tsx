@@ -18,6 +18,7 @@ import {
   db,
   type ExerciseEntry,
   type MealEntry,
+  type NoteEntry,
   type Profile,
   type StepEntry,
   type WaterLog,
@@ -32,7 +33,15 @@ import {
   stepsToKcal,
   totalKcalToGoal,
 } from '../lib/calc';
-import { addMonths, daysInMonth, formatMonth, monthDates, toMonthStr, todayStr } from '../lib/date';
+import {
+  addMonths,
+  daysInMonth,
+  formatDateShort,
+  formatMonth,
+  monthDates,
+  toMonthStr,
+  todayStr,
+} from '../lib/date';
 import { useChartTheme, type ChartTheme } from '../lib/chartTheme';
 
 interface DayRow {
@@ -87,18 +96,19 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     async () => {
       const start = `${month}-01`;
       const end = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`;
-      const range = (table: 'weights' | 'meals' | 'waterLogs' | 'steps' | 'exercises') =>
+      const range = (table: 'weights' | 'meals' | 'waterLogs' | 'steps' | 'exercises' | 'notes') =>
         db
           .table(table)
           .where('[profileId+date]')
           .between([profile.id, start], [profile.id, end], true, true)
           .toArray();
-      const [weights, meals, waterLogs, steps, exercises, allWeights] = await Promise.all([
+      const [weights, meals, waterLogs, steps, exercises, notes, allWeights] = await Promise.all([
         range('weights'),
         range('meals'),
         range('waterLogs'),
         range('steps'),
         range('exercises'),
+        range('notes'),
         db.weights.where('profileId').equals(profile.id).toArray(),
       ]);
       return {
@@ -107,6 +117,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         waterLogs: waterLogs as WaterLog[],
         steps: steps as StepEntry[],
         exercises: exercises as ExerciseEntry[],
+        notes: notes as NoteEntry[],
         allWeights,
       };
     },
@@ -473,6 +484,20 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             食べたカロリー」。貯金がプラスの日は体重が減る方向で、運動を増やしても食事を抑えても貯まります。
             貯金が約7,200kcal貯まるごとに体重が1kg減る計算です。食事と体重を記録した日に表示されます。
           </p>
+        </div>
+      )}
+
+      {(raw?.notes.length ?? 0) > 0 && (
+        <div className="card">
+          <h2>この月のメモ</h2>
+          {[...raw!.notes]
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .map((n) => (
+              <div className="month-note" key={n.id}>
+                <div className="month-note-date">{formatDateShort(n.date)}</div>
+                <p>{n.text}</p>
+              </div>
+            ))}
         </div>
       )}
     </div>
