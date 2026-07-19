@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, setActiveProfileId, type Profile } from './db';
 import { Onboarding } from './components/Onboarding';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
-import { TrendsPage } from './pages/TrendsPage';
+
+// Rechartsを使う推移画面はバンドルの大部分を占めるため、選んだ時だけ読み込む
+const TrendsPage = lazy(() => import('./pages/TrendsPage').then((m) => ({ default: m.TrendsPage })));
 
 type Tab = 'you' | 'record' | 'trends';
 
@@ -64,7 +66,11 @@ export default function App() {
 
       {tab === 'you' && <YouPage profile={profile} />}
       {tab === 'record' && <RecordPage profile={profile} />}
-      {tab === 'trends' && <TrendsPage profile={profile} />}
+      {tab === 'trends' && (
+        <Suspense fallback={<div className="empty-note">読み込み中…</div>}>
+          <TrendsPage profile={profile} />
+        </Suspense>
+      )}
 
       <nav className="tabbar">
         {TABS.map((t) => (
