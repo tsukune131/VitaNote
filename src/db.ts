@@ -14,11 +14,9 @@ export interface Profile {
   targetDate?: string; // YYYY-MM-DD
   useMedication?: boolean; // 服薬管理を使うか
   // 任意の検査値記録。オンにしたものだけ「きょう」に入力欄が出る
-  trackHbA1c?: boolean;
-  trackGlucose?: boolean;
+  trackWaist?: boolean;
   trackBloodPressure?: boolean;
-  trackLDL?: boolean;
-  trackTG?: boolean;
+  trackGlucose?: boolean;
 }
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -117,12 +115,10 @@ export interface HealthMetricEntry {
   id: number;
   profileId: number;
   date: string;
-  hba1c?: number; // HbA1c(%)
-  glucose?: number; // 血糖値(mg/dL)
+  waist?: number; // 腹囲(cm)
   systolic?: number; // 血圧・収縮期(mmHg)
   diastolic?: number; // 血圧・拡張期(mmHg)
-  ldl?: number; // LDLコレステロール(mg/dL)
-  tg?: number; // 中性脂肪(mg/dL)
+  glucose?: number; // 血糖値(mg/dL)
 }
 
 export interface Setting {

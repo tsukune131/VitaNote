@@ -228,11 +228,9 @@ export function YouPage({ profile }: { profile: Profile }) {
         <div className="row" style={{ flexWrap: 'wrap' }}>
           {(
             [
-              ['trackHbA1c', 'HbA1c'],
-              ['trackGlucose', '血糖値'],
+              ['trackWaist', '腹囲'],
               ['trackBloodPressure', '血圧'],
-              ['trackLDL', 'LDL'],
-              ['trackTG', '中性脂肪(TG)'],
+              ['trackGlucose', '血糖値'],
             ] as const
           ).map(([key, label]) => (
             <label className="checkbox-inline" key={key}>

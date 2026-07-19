@@ -135,22 +135,18 @@ function WeightSection({ profileId, date }: { profileId: number; date: string })
 /* ---------- 検査値 ---------- */
 
 const METRIC_FIELDS = [
-  ['hba1c', 'HbA1c', '%', 'trackHbA1c'],
+  ['waist', '腹囲', 'cm', 'trackWaist'],
   ['glucose', '血糖値', 'mg/dL', 'trackGlucose'],
-  ['ldl', 'LDL', 'mg/dL', 'trackLDL'],
-  ['tg', '中性脂肪(TG)', 'mg/dL', 'trackTG'],
 ] as const;
 
 function HealthMetricsSection({ profile, date }: { profile: Profile; date: string }) {
   const profileId = profile.id;
   const entry = useEntry<{
     id: number;
-    hba1c?: number;
+    waist?: number;
     glucose?: number;
     systolic?: number;
     diastolic?: number;
-    ldl?: number;
-    tg?: number;
   }>('healthMetrics', profileId, date);
 
   const [values, setValues] = useState<Record<string, string>>({});
@@ -161,10 +157,8 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
   useEffect(() => {
     if (entry) {
       setValues({
-        hba1c: entry.hba1c != null ? String(entry.hba1c) : '',
+        waist: entry.waist != null ? String(entry.waist) : '',
         glucose: entry.glucose != null ? String(entry.glucose) : '',
-        ldl: entry.ldl != null ? String(entry.ldl) : '',
-        tg: entry.tg != null ? String(entry.tg) : '',
       });
       setSystolic(entry.systolic != null ? String(entry.systolic) : '');
       setDiastolic(entry.diastolic != null ? String(entry.diastolic) : '');

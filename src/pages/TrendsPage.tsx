@@ -68,12 +68,10 @@ interface DayRow {
   exerciseKcal: number;
   burn?: number; // 活動消費合計(記録がない未来日はundefined)
   deficit?: number; // カロリー貯金 = BMR×1.2 + 活動消費 − 摂取(食事記録がある日のみ)
-  hba1c?: number;
+  waist?: number;
   glucose?: number;
   systolic?: number;
   diastolic?: number;
-  ldl?: number;
-  tg?: number;
 }
 
 type ChartKey = 'weight' | 'intake' | 'water' | 'steps' | 'burn' | 'meds' | 'health';
@@ -119,11 +117,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
   }, [chart]);
 
   const hasHealthTracking =
-    profile.trackHbA1c ||
-    profile.trackGlucose ||
-    profile.trackBloodPressure ||
-    profile.trackLDL ||
-    profile.trackTG;
+    profile.trackWaist || profile.trackBloodPressure || profile.trackGlucose;
 
   const tabs = [
     ...CHART_TABS,
@@ -307,12 +301,10 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         exerciseKcal,
         burn: burn != null ? Math.round(burn) : undefined,
         deficit: deficit != null ? Math.round(deficit) : undefined,
-        hba1c: health?.hba1c,
+        waist: health?.waist,
         glucose: health?.glucose,
         systolic: health?.systolic,
         diastolic: health?.diastolic,
-        ldl: health?.ldl,
-        tg: health?.tg,
       };
     });
   }, [raw, month, required, profile.birthDate, profile.heightCm, profile.sex]);
@@ -608,12 +600,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       {chart === 'health' && (
         <>
           {!rows.some(
-            (r) =>
-              r.hba1c != null ||
-              r.glucose != null ||
-              r.systolic != null ||
-              r.ldl != null ||
-              r.tg != null,
+            (r) => r.waist != null || r.glucose != null || r.systolic != null,
           ) && (
             <div className="card">
               <div className="empty-note">
@@ -623,21 +610,21 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               </div>
             </div>
           )}
-          {profile.trackHbA1c && rows.some((r) => r.hba1c != null) && (
-            <ChartCard title="HbA1c" sub="単位: %">
+          {profile.trackWaist && rows.some((r) => r.waist != null) && (
+            <ChartCard title="腹囲" sub="単位: cm">
               <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke={theme.grid} vertical={false} />
                 <XAxis {...xAxisProps(theme)} />
                 <YAxis
                   {...yAxisProps(theme)}
-                  domain={['dataMin - 0.2', 'dataMax + 0.2']}
+                  domain={['dataMin - 1', 'dataMax + 1']}
                   tickFormatter={(v: number) => v.toFixed(1)}
                 />
-                <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('%')} labelFormatter={fmtDay} />
+                <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('cm')} labelFormatter={fmtDay} />
                 <Line
                   type="monotone"
-                  dataKey="hba1c"
-                  name="HbA1c"
+                  dataKey="waist"
+                  name="腹囲"
                   stroke={theme.weight}
                   strokeWidth={2}
                   dot={{ r: 2, fill: theme.weight, strokeWidth: 0 }}
@@ -700,54 +687,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                   stroke={theme.steps}
                   strokeWidth={2}
                   dot={{ r: 2, fill: theme.steps, strokeWidth: 0 }}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ChartCard>
-          )}
-          {profile.trackLDL && rows.some((r) => r.ldl != null) && (
-            <ChartCard title="LDLコレステロール" sub="単位: mg/dL">
-              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke={theme.grid} vertical={false} />
-                <XAxis {...xAxisProps(theme)} />
-                <YAxis {...yAxisProps(theme)} domain={['dataMin - 10', 'dataMax + 10']} />
-                <Tooltip
-                  {...tooltipProps(theme)}
-                  formatter={fmtUnit('mg/dL')}
-                  labelFormatter={fmtDay}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="ldl"
-                  name="LDL"
-                  stroke={theme.fat}
-                  strokeWidth={2}
-                  dot={{ r: 2, fill: theme.fat, strokeWidth: 0 }}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ChartCard>
-          )}
-          {profile.trackTG && rows.some((r) => r.tg != null) && (
-            <ChartCard title="中性脂肪(TG)" sub="単位: mg/dL">
-              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke={theme.grid} vertical={false} />
-                <XAxis {...xAxisProps(theme)} />
-                <YAxis {...yAxisProps(theme)} domain={['dataMin - 10', 'dataMax + 10']} />
-                <Tooltip
-                  {...tooltipProps(theme)}
-                  formatter={fmtUnit('mg/dL')}
-                  labelFormatter={fmtDay}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tg"
-                  name="中性脂肪"
-                  stroke={theme.snack}
-                  strokeWidth={2}
-                  dot={{ r: 2, fill: theme.snack, strokeWidth: 0 }}
                   activeDot={{ r: 4 }}
                   connectNulls
                 />
