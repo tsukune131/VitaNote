@@ -31,6 +31,7 @@ export interface Medication {
   meals?: MealSlot[]; // 対象の食事(frequency='meal'のみ)
   weekday?: number; // 0(日)〜6(土)。frequency='weekly'のみ
   dayOfMonth?: number; // 1〜31。frequency='monthly'のみ
+  startDate?: string; // 登録日(YYYY-MM-DD)。これより前の日は飲み忘れに数えない
 }
 
 /** ある日、その薬を飲んだ記録(存在すれば服用済み)。食事ひもづけの薬のみmealを持つ */

@@ -7,7 +7,7 @@ import {
   type MedicationFrequency,
   type MedicationTiming,
 } from '../db';
-import { WEEKDAY_LABELS } from '../lib/date';
+import { WEEKDAY_LABELS, todayStr } from '../lib/date';
 
 const MEALS: { key: MealSlot; label: string }[] = [
   { key: 'breakfast', label: '朝食' },
@@ -94,7 +94,7 @@ export function MedicationManager({ profileId }: { profileId: number }) {
           ? { ...base, weekday, timing: undefined, meals: undefined, dayOfMonth: undefined }
           : { ...base, dayOfMonth, timing: undefined, meals: undefined, weekday: undefined };
     if (editingId != null) await db.medications.update(editingId, data);
-    else await db.medications.add({ profileId, ...data } as never);
+    else await db.medications.add({ profileId, ...data, startDate: todayStr() } as never);
     resetForm();
   }
 

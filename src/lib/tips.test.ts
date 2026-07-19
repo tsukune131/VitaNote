@@ -27,4 +27,21 @@ describe('tipForDate', () => {
     expect(tipForDate('2026-01-01').length).toBeGreaterThan(0);
     expect(tipForDate('2026-12-31').length).toBeGreaterThan(0);
   });
+
+  it('服薬管理オフの人には薬のひとことが出ない', () => {
+    for (let d = 1; d <= 31; d++) {
+      const tip = tipForDate(`2026-07-${String(d).padStart(2, '0')}`, false);
+      expect(tip).not.toContain('薬');
+    }
+  });
+
+  it('服薬管理オンなら薬のひとことも候補に入る(1年でどこかで出る)', () => {
+    const dates: string[] = [];
+    for (let m = 1; m <= 12; m++) {
+      for (let d = 1; d <= 28; d++) {
+        dates.push(`2026-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+      }
+    }
+    expect(dates.some((date) => tipForDate(date, true).includes('薬'))).toBe(true);
+  });
 });

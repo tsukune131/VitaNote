@@ -7,6 +7,7 @@
 interface Tip {
   text: string;
   months?: number[]; // 1〜12。省略時は通年
+  medication?: boolean; // 服薬管理を使っている人にだけ出す
 }
 
 const TIPS: Tip[] = [
@@ -55,6 +56,17 @@ const TIPS: Tip[] = [
   { text: 'ご褒美は食べ物以外で。お風呂、映画、新しい靴下' },
   { text: '「今日はいいや」の日も、体重だけは量っておきましょう' },
   { text: '体重は水分だけで1kg動きます。一喜一憂しないこと' },
+  // ---- お薬(薬剤師視点。一般的な注意に限る) ----
+  { text: '薬は自己判断でやめないで。気になることは医師・薬剤師に相談を', medication: true },
+  { text: '飲み忘れても、2回分をまとめて飲むのは基本NGです', medication: true },
+  { text: '薬は水かぬるま湯で。お茶やジュースより確実です', medication: true },
+  { text: 'グレープフルーツと相性の悪い薬があります。処方時の説明を思い出して', medication: true },
+  { text: 'サプリにも飲み合わせがあります。受診時に伝えると安心です', medication: true },
+  { text: '飲み忘れ対策は「食事とセットの習慣化」がいちばん効きます', medication: true },
+  { text: '体重が変わると薬の効き方が変わることも。減量の成果は受診時に伝えましょう', medication: true },
+  { text: '薬の保管は高温多湿を避けて。夏の車内への置き忘れに注意', medication: true },
+  { text: '残った薬の自己判断での再利用は避けて。困ったら薬局へ', medication: true },
+  { text: '湿布や目薬も立派な薬。記録しておくと診察のとき役立ちます', medication: true },
   // ---- 春 ----
   { text: '陽気のいい日は、一駅ぶん歩いてみましょう', months: [3, 4, 5] },
   { text: '新生活のバタバタでも、朝の体重測定だけは続けましょう', months: [3, 4] },
@@ -85,9 +97,14 @@ function hash(s: string): number {
   return h;
 }
 
-/** その日のひとことを返す。同じ日付なら常に同じ、月替わりの季節ネタ入り */
-export function tipForDate(dateStr: string): string {
+/**
+ * その日のひとことを返す。同じ日付なら常に同じ、月替わりの季節ネタ入り。
+ * includeMedication=trueなら薬剤師視点のひとことも候補に入る
+ */
+export function tipForDate(dateStr: string, includeMedication = false): string {
   const month = Number(dateStr.slice(5, 7));
-  const pool = TIPS.filter((t) => !t.months || t.months.includes(month));
+  const pool = TIPS.filter(
+    (t) => (!t.months || t.months.includes(month)) && (includeMedication || !t.medication),
+  );
   return pool[hash(dateStr) % pool.length].text;
 }

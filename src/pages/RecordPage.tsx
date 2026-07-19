@@ -34,7 +34,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
 
       <div className="tip-card">
         <span className="tip-label">きょうのひとこと</span>
-        <p>{tipForDate(todayStr())}</p>
+        <p>{tipForDate(todayStr(), profile.useMedication ?? false)}</p>
       </div>
 
       <div className="date-nav">
