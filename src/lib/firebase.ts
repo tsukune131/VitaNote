@@ -9,12 +9,12 @@ import type { Firestore } from 'firebase/firestore';
  * SDKはバンドルを肥大化させるため、すべて動的importで遅延読み込みする。
  */
 const firebaseConfig = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyBCOeFjtdCjjict92FW1COw4_1sgd4sV4Q',
+  authDomain: 'weightnote-923c3.firebaseapp.com',
+  projectId: 'weightnote-923c3',
+  storageBucket: 'weightnote-923c3.firebasestorage.app',
+  messagingSenderId: '766870192843',
+  appId: '1:766870192843:web:bd999048ee24e61099914e',
 };
 
 export const isFirebaseConfigured = firebaseConfig.apiKey !== '';
