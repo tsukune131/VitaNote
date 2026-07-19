@@ -54,7 +54,7 @@ export function ProfileForm({ profile, onSaved }: Props) {
             onChange={(e) => setHeightCm(e.target.value)}
           />
         </label>
-        <label className="field">
+        <label className="field field-fixed-date">
           生年月日
           <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
         </label>

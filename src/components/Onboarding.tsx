@@ -84,7 +84,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                 onChange={(e) => setTargetWeight(e.target.value)}
               />
             </label>
-            <label className="field">
+            <label className="field field-fixed-date">
               目標達成日
               <input
                 type="date"

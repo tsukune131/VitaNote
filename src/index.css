@@ -120,12 +120,13 @@ select {
 }
 
 /* iOSのdate/timeピッカーは内部UIの最低幅を無視して描画がはみ出すため、
-   固定幅を確保して隣の項目だけを伸縮させる */
-.row > label:has(> input[type='date']) {
+   固定幅を確保して隣の項目だけを伸縮させる(:has()は非対応環境があるため
+   セレクタに頼らずクラスを明示する) */
+.field-fixed-date {
   flex: 0 0 152px;
 }
 
-.row > label:has(> input[type='time']) {
+.field-fixed-time {
   flex: 0 0 110px;
 }
 
@@ -339,6 +340,17 @@ button:disabled {
 .streak-count {
   font-size: 16px;
   font-weight: 700;
+}
+
+.menu-toggle {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 0 10px;
+}
+
+.menu-toggle.active {
+  color: var(--accent);
 }
 
 .menu-panel {

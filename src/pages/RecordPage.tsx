@@ -228,7 +228,7 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
                 onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
               />
             </label>
-            <label className="field">
+            <label className="field field-fixed-time">
               時刻
               <input
                 type="time"
@@ -236,15 +236,13 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
                 onChange={(e) => setTimes((t) => ({ ...t, [key]: e.target.value }))}
               />
             </label>
-            <button
-              className={`secondary ${menuFor === key ? 'active' : ''}`}
-              style={{ flex: '0 0 auto', marginBottom: 8 }}
-              onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
-              aria-label={`${label}にマイメニューから入力`}
-            >
-              📖
-            </button>
           </div>
+          <button
+            className={`ghost menu-toggle ${menuFor === key ? 'active' : ''}`}
+            onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
+          >
+            📖 マイメニューから選ぶ
+          </button>
           {menuFor === key && (
             <div className="menu-panel">
               {(foods ?? []).length === 0 && (
