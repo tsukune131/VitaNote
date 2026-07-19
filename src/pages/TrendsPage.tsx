@@ -302,7 +302,10 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         </div>
       )}
       {chart === 'weight' && rows.some((r) => r.bodyFat != null) && (
-        <ChartCard title="体脂肪率">
+        <ChartCard
+          title="体脂肪率"
+          sub={profile.targetFatPct != null ? `点線 = 目標 ${profile.targetFatPct}%` : undefined}
+        >
           <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid stroke={theme.grid} vertical={false} />
             <XAxis {...xAxisProps(theme)} />
@@ -312,6 +315,14 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               tickFormatter={(v: number) => v.toFixed(1)}
             />
             <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('%')} labelFormatter={fmtDay} />
+            {profile.targetFatPct != null && (
+              <ReferenceLine
+                y={profile.targetFatPct}
+                stroke={theme.reference}
+                strokeDasharray="4 4"
+                ifOverflow="extendDomain"
+              />
+            )}
             <Line
               type="monotone"
               dataKey="bodyFat"

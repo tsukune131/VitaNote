@@ -10,13 +10,16 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState<Step>('welcome');
   const [profileId, setProfileId] = useState<number | null>(null);
   const [targetWeight, setTargetWeight] = useState('');
+  const [targetFat, setTargetFat] = useState('');
   const [targetDate, setTargetDate] = useState('');
 
   async function saveGoalAndContinue() {
     const w = Number(targetWeight);
-    if (profileId != null && (w > 0 || targetDate)) {
+    const f = Number(targetFat);
+    if (profileId != null && (w > 0 || f > 0 || targetDate)) {
       await db.profiles.update(profileId, {
         targetWeightKg: w > 0 ? w : undefined,
+        targetFatPct: f > 0 ? f : undefined,
         targetDate: targetDate || undefined,
       });
     }
@@ -82,6 +85,18 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                 min="1"
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value)}
+              />
+            </label>
+            <label className="field">
+              目標体脂肪率(%)
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="1"
+                max="80"
+                value={targetFat}
+                onChange={(e) => setTargetFat(e.target.value)}
               />
             </label>
             <label className="field field-fixed-date">

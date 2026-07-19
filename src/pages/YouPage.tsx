@@ -19,14 +19,18 @@ export function YouPage({ profile }: { profile: Profile }) {
   const [targetWeight, setTargetWeight] = useState(
     profile.targetWeightKg != null ? String(profile.targetWeightKg) : '',
   );
+  const [targetFat, setTargetFat] = useState(
+    profile.targetFatPct != null ? String(profile.targetFatPct) : '',
+  );
   const [targetDate, setTargetDate] = useState(profile.targetDate ?? '');
 
   // プロフィール切替時にフォームを同期
   useEffect(() => {
     setTargetWeight(profile.targetWeightKg != null ? String(profile.targetWeightKg) : '');
+    setTargetFat(profile.targetFatPct != null ? String(profile.targetFatPct) : '');
     setTargetDate(profile.targetDate ?? '');
     setEditing(false);
-  }, [profile.id, profile.targetWeightKg, profile.targetDate]);
+  }, [profile.id, profile.targetWeightKg, profile.targetFatPct, profile.targetDate]);
 
   const latest = useLiveQuery(
     async () => {
@@ -60,8 +64,10 @@ export function YouPage({ profile }: { profile: Profile }) {
     totalKcal != null && remainDays != null ? requiredDailyKcal(totalKcal, remainDays) : undefined;
 
   async function saveGoal() {
+    const fat = Number(targetFat);
     await db.profiles.update(profile.id, {
       targetWeightKg: targetKg > 0 ? targetKg : undefined,
+      targetFatPct: fat > 0 ? fat : undefined,
       targetDate: targetDate || undefined,
     });
   }
@@ -139,6 +145,18 @@ export function YouPage({ profile }: { profile: Profile }) {
               onChange={(e) => setTargetWeight(e.target.value)}
             />
           </label>
+          <label className="field">
+            目標体脂肪率(%)
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="1"
+              max="80"
+              value={targetFat}
+              onChange={(e) => setTargetFat(e.target.value)}
+            />
+          </label>
           <label className="field field-fixed-date">
             目標達成日
             <input
@@ -159,6 +177,15 @@ export function YouPage({ profile }: { profile: Profile }) {
                 <small> kg</small>
               </div>
             </div>
+            {latest?.fatPct != null && Number(targetFat) > 0 && (
+              <div className="stat">
+                <div className="label">目標までの体脂肪率差</div>
+                <div className="value">
+                  {(latest.fatPct - Number(targetFat)).toFixed(1)}
+                  <small> %</small>
+                </div>
+              </div>
+            )}
             <div className="stat">
               <div className="label">必要な総消費カロリー(×7200)</div>
               <div className="value">

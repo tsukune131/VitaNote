@@ -407,6 +407,28 @@ button:disabled {
   border-top: 1px dashed var(--border);
 }
 
+/* ---- きょうのひとこと(余白のメモ) ---- */
+
+.tip-card {
+  border-left: 3px solid var(--accent);
+  padding: 4px 12px;
+  margin: 0 2px 14px;
+}
+
+.tip-card .tip-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tip-card p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 /* ---- マイメニュー ---- */
 
 .menu-toggle {

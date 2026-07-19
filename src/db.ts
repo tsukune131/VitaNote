@@ -10,6 +10,7 @@ export interface Profile {
   sex: Sex;
   activityLevel: number;
   targetWeightKg?: number;
+  targetFatPct?: number; // 目標体脂肪率(%)
   targetDate?: string; // YYYY-MM-DD
 }
 

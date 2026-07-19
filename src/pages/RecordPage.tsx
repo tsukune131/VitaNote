@@ -12,6 +12,7 @@ import {
   totalKcalToGoal,
 } from '../lib/calc';
 import { addDays, formatDateShort, nowTimeStr, todayStr } from '../lib/date';
+import { tipForDate } from '../lib/tips';
 
 export function RecordPage({ profile }: { profile: Profile }) {
   const [date, setDate] = useState(todayStr());
@@ -19,6 +20,11 @@ export function RecordPage({ profile }: { profile: Profile }) {
   return (
     <div>
       <StreakSummary profile={profile} />
+
+      <div className="tip-card">
+        <span className="tip-label">きょうのひとこと</span>
+        <p>{tipForDate(todayStr())}</p>
+      </div>
 
       <div className="date-nav">
         <button onClick={() => setDate((d) => addDays(d, -1))}>◀</button>
