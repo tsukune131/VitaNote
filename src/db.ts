@@ -12,6 +12,28 @@ export interface Profile {
   targetWeightKg?: number;
   targetFatPct?: number; // 目標体脂肪率(%)
   targetDate?: string; // YYYY-MM-DD
+  useMedication?: boolean; // 服薬管理を使うか
+}
+
+export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MedicationTiming = 'before' | 'after';
+
+/** 薬の登録情報(日を跨いで引き継がれるマスタ) */
+export interface Medication {
+  id: number;
+  profileId: number;
+  name: string;
+  timing: MedicationTiming; // 食前・食後
+  meals: MealSlot[]; // 対象の食事(複数可)
+}
+
+/** ある日・ある食事で、その薬を飲んだ記録(存在すれば服用済み) */
+export interface MedicationLog {
+  id: number;
+  profileId: number;
+  date: string;
+  medicationId: number;
+  meal: MealSlot;
 }
 
 export interface WeightEntry {
@@ -91,6 +113,8 @@ export const db = new Dexie('weight-app') as Dexie & {
   exercises: EntityTable<ExerciseEntry, 'id'>;
   foods: EntityTable<Food, 'id'>;
   notes: EntityTable<NoteEntry, 'id'>;
+  medications: EntityTable<Medication, 'id'>;
+  medicationLogs: EntityTable<MedicationLog, 'id'>;
   settings: EntityTable<Setting, 'key'>;
 };
 
@@ -124,6 +148,12 @@ db.version(5).stores({
   tombstones: null,
 });
 
+// v6: 服薬管理(薬マスタ+日ごとの服用チェック)を追加
+db.version(6).stores({
+  medications: '++id, profileId',
+  medicationLogs: '++id, profileId, [profileId+date]',
+});
+
 export async function setActiveProfileId(id: number): Promise<void> {
   await db.settings.put({ key: 'activeProfileId', value: String(id) });
 }
@@ -131,7 +161,18 @@ export async function setActiveProfileId(id: number): Promise<void> {
 export async function deleteProfile(id: number): Promise<void> {
   await db.transaction(
     'rw',
-    [db.profiles, db.weights, db.meals, db.waterLogs, db.steps, db.exercises, db.foods, db.notes],
+    [
+      db.profiles,
+      db.weights,
+      db.meals,
+      db.waterLogs,
+      db.steps,
+      db.exercises,
+      db.foods,
+      db.notes,
+      db.medications,
+      db.medicationLogs,
+    ],
     async () => {
       await db.profiles.delete(id);
       for (const table of [
@@ -142,6 +183,8 @@ export async function deleteProfile(id: number): Promise<void> {
         db.exercises,
         db.foods,
         db.notes,
+        db.medications,
+        db.medicationLogs,
       ]) {
         await table.where('profileId').equals(id).delete();
       }

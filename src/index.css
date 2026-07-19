@@ -514,6 +514,35 @@ button:disabled {
   line-height: 1.7;
 }
 
+/* ---- 服薬管理 ---- */
+
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  flex: 0 0 auto;
+}
+
+.checkbox-inline input {
+  width: auto;
+  margin-top: 0;
+}
+
+.medicine-box {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.medicine-row {
+  font-size: 14px;
+}
+
 /* ---- マイメニュー ---- */
 
 .menu-toggle {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Food, type Profile } from '../db';
+import { db, type Food, type MealSlot, type Profile } from '../db';
+import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
 import {
@@ -40,7 +41,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
       </div>
 
       <WeightSection key={`w-${profile.id}-${date}`} profileId={profile.id} date={date} />
-      <MealSection key={`m-${profile.id}-${date}`} profileId={profile.id} date={date} />
+      <MealSection key={`m-${profile.id}-${date}`} profile={profile} date={date} />
       <WaterSection profileId={profile.id} date={date} />
       <StepsSection key={`s-${profile.id}-${date}`} profileId={profile.id} date={date} />
       <ExerciseSection profileId={profile.id} date={date} />
@@ -131,7 +132,8 @@ const MEAL_FIELDS = [
   ['snack', '間食'],
 ] as const;
 
-function MealSection({ profileId, date }: { profileId: number; date: string }) {
+function MealSection({ profile, date }: { profile: Profile; date: string }) {
+  const profileId = profile.id;
   const entry = useEntry<{
     id: number;
     breakfast: number;
@@ -204,6 +206,35 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
     setNewKcal('');
   }
 
+  // 服薬管理
+  const useMedication = profile.useMedication ?? false;
+  const [showMedManager, setShowMedManager] = useState(false);
+  const medications = useLiveQuery(
+    async () => (useMedication ? db.medications.where('profileId').equals(profileId).toArray() : []),
+    [profileId, useMedication],
+  );
+  const medLogs = useLiveQuery(
+    async () =>
+      useMedication
+        ? db.medicationLogs.where('[profileId+date]').equals([profileId, date]).toArray()
+        : [],
+    [profileId, date, useMedication],
+  );
+
+  async function toggleUseMedication(checked: boolean) {
+    await db.profiles.update(profileId, { useMedication: checked });
+    if (!checked) setShowMedManager(false);
+  }
+
+  async function toggleTaken(medicationId: number, meal: MealSlot, taken: boolean) {
+    const existing = medLogs?.find((l) => l.medicationId === medicationId && l.meal === meal);
+    if (taken && !existing) {
+      await db.medicationLogs.add({ profileId, date, medicationId, meal } as never);
+    } else if (!taken && existing) {
+      await db.medicationLogs.delete(existing.id);
+    }
+  }
+
   async function save() {
     const data = {
       breakfast: Number(values.breakfast) || 0,
@@ -223,8 +254,31 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
 
   return (
     <div className="card">
-      <h2>食事</h2>
-      {MEAL_FIELDS.map(([key, label]) => (
+      <div className="card-head">
+        <h2>食事</h2>
+        <label className="checkbox-inline muted">
+          <input
+            type="checkbox"
+            checked={useMedication}
+            onChange={(e) => void toggleUseMedication(e.target.checked)}
+          />
+          💊 服薬も記録する
+        </label>
+      </div>
+      {useMedication && (
+        <>
+          <button
+            className={`ghost menu-toggle ${showMedManager ? 'active' : ''}`}
+            onClick={() => setShowMedManager((v) => !v)}
+          >
+            💊 薬を管理
+          </button>
+          {showMedManager && <MedicationManager profileId={profileId} />}
+        </>
+      )}
+      {MEAL_FIELDS.map(([key, label]) => {
+        const medsForMeal = (medications ?? []).filter((m) => m.meals.includes(key));
+        return (
         <div key={key}>
           <div className="row" style={{ alignItems: 'flex-end' }}>
             <label className="field">
@@ -246,6 +300,25 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
               />
             </label>
           </div>
+          {useMedication && medsForMeal.length > 0 && (
+            <div className="medicine-box">
+              {medsForMeal.map((m) => {
+                const taken =
+                  medLogs?.some((l) => l.medicationId === m.id && l.meal === key) ?? false;
+                return (
+                  <label className="checkbox-inline medicine-row" key={m.id}>
+                    <input
+                      type="checkbox"
+                      checked={taken}
+                      onChange={(e) => void toggleTaken(m.id, key, e.target.checked)}
+                    />
+                    💊 {m.name}
+                    <span className="muted">({m.timing === 'before' ? '食前' : '食後'})</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
           <button
             className={`ghost menu-toggle ${menuFor === key ? 'active' : ''}`}
             onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
@@ -309,7 +382,8 @@ function MealSection({ profileId, date }: { profileId: number; date: string }) {
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
       <div className="row" style={{ alignItems: 'center' }}>
         <div className="muted">合計 {total.toLocaleString()} kcal</div>
         <button onClick={() => void save()} style={{ flex: '0 0 auto' }}>
