@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(npm install react react-dom)",
-      "PowerShell(npm install -D @vitejs/plugin-react-swc @types/react @types/react-dom)",
-      "PowerShell(node -e \"const p=require\\('./package.json'\\);console.log\\(JSON.stringify\\({dep:p.dependencies,dev:p.devDependencies},null,1\\)\\)\")"
-    ]
-  }
-}
