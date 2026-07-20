@@ -35,7 +35,6 @@ import {
   bmr,
   dailyDeficit,
   daysUntil,
-  METABO_WAIST_THRESHOLD,
   requiredDailyKcal,
   stepsToKcal,
   totalKcalToGoal,
@@ -450,24 +449,50 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         ))}
 
       {chart === 'weight' && (
-      <ChartCard title="体重" sub={profile.targetWeightKg != null ? `点線 = 目標 ${profile.targetWeightKg}kg` : undefined}>
+      <ChartCard
+        title="体重・腹囲"
+        sub={`左軸=体重kg・右軸=腹囲cm${
+          profile.targetWeightKg != null ? `・体重目標 ${profile.targetWeightKg}kg` : ''
+        }${profile.targetWaistCm != null ? `・腹囲目標 ${profile.targetWaistCm}cm` : ''}`}
+      >
         <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis
+            yAxisId="left"
             {...yAxisProps(theme)}
             domain={['dataMin - 1', 'dataMax + 1']}
-            tickFormatter={(v: number) => v.toFixed(1)}
+            tickFormatter={(v: number) => v.toFixed(0)}
           />
-          <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('kg')} labelFormatter={fmtDay} />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            {...yAxisProps(theme)}
+            domain={['dataMin - 1', 'dataMax + 1']}
+            tickFormatter={(v: number) => v.toFixed(0)}
+          />
+          <Tooltip {...tooltipProps(theme)} formatter={fmtWeightWaist} labelFormatter={fmtDay} />
+          <Legend {...legendProps()} />
           {profile.targetWeightKg != null && (
             <ReferenceLine
+              yAxisId="left"
               y={profile.targetWeightKg}
               stroke={theme.reference}
               strokeDasharray="4 4"
+              ifOverflow="extendDomain"
+            />
+          )}
+          {profile.targetWaistCm != null && (
+            <ReferenceLine
+              yAxisId="right"
+              y={profile.targetWaistCm}
+              stroke={theme.exercise}
+              strokeDasharray="2 2"
+              ifOverflow="extendDomain"
             />
           )}
           <Line
+            yAxisId="left"
             type="monotone"
             dataKey="weight"
             name="体重"
@@ -477,8 +502,27 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             activeDot={{ r: 4 }}
             connectNulls
           />
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="waist"
+            name="腹囲"
+            stroke={theme.exercise}
+            strokeWidth={2}
+            dot={{ r: 2, fill: theme.exercise, strokeWidth: 0 }}
+            activeDot={{ r: 4 }}
+            connectNulls
+          />
         </LineChart>
       </ChartCard>
+      )}
+
+      {chart === 'weight' && !rows.some((r) => r.waist != null) && (
+        <div className="card">
+          <div className="empty-note">
+            この月の腹囲の記録がまだありません。「きょう」タブで体重と一緒に入力できます。
+          </div>
+        </div>
       )}
 
       {chart === 'weight' && !rows.some((r) => r.bodyFat != null) && (
@@ -517,55 +561,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               stroke={theme.fat}
               strokeWidth={2}
               dot={{ r: 2, fill: theme.fat, strokeWidth: 0 }}
-              activeDot={{ r: 4 }}
-              connectNulls
-            />
-          </LineChart>
-        </ChartCard>
-      )}
-
-      {chart === 'weight' && !rows.some((r) => r.waist != null) && (
-        <div className="card">
-          <div className="empty-note">
-            この月の腹囲の記録がまだありません。「きょう」タブで体重と一緒に入力できます。
-          </div>
-        </div>
-      )}
-      {chart === 'weight' && rows.some((r) => r.waist != null) && (
-        <ChartCard
-          title="腹囲"
-          sub={`単位: cm・点線 = メタボ基準 ${METABO_WAIST_THRESHOLD[profile.sex]}cm${profile.targetWaistCm != null ? ` / 目標 ${profile.targetWaistCm}cm` : ''}`}
-        >
-          <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid stroke={theme.grid} vertical={false} />
-            <XAxis {...xAxisProps(theme)} />
-            <YAxis
-              {...yAxisProps(theme)}
-              domain={['dataMin - 1', 'dataMax + 1']}
-              tickFormatter={(v: number) => v.toFixed(1)}
-            />
-            <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('cm')} labelFormatter={fmtDay} />
-            <ReferenceLine
-              y={METABO_WAIST_THRESHOLD[profile.sex]}
-              stroke={theme.reference}
-              strokeDasharray="4 4"
-              ifOverflow="extendDomain"
-            />
-            {profile.targetWaistCm != null && (
-              <ReferenceLine
-                y={profile.targetWaistCm}
-                stroke={theme.divergePos}
-                strokeDasharray="2 2"
-                ifOverflow="extendDomain"
-              />
-            )}
-            <Line
-              type="monotone"
-              dataKey="waist"
-              name="腹囲"
-              stroke={theme.weight}
-              strokeWidth={2}
-              dot={{ r: 2, fill: theme.weight, strokeWidth: 0 }}
               activeDot={{ r: 4 }}
               connectNulls
             />
@@ -905,6 +900,12 @@ function fmtUnit(unit: string) {
 
 function fmtDay(d: unknown) {
   return `${String(d ?? '')}日`;
+}
+
+/** 体重・腹囲の合成グラフ用: 系列名で単位(kg/cm)を切り替える */
+function fmtWeightWaist(value: unknown, name: unknown): [string, string] {
+  const v = typeof value === 'number' ? value.toFixed(1) : String(value ?? '');
+  return [`${v}${name === '腹囲' ? 'cm' : 'kg'}`, String(name ?? '')];
 }
 
 /** 摂取カロリーのツールチップ: 値に食事時刻を添える */

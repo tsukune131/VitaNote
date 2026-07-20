@@ -11,8 +11,6 @@ import {
   bmiCategory,
   bmr,
   daysUntil,
-  isMetaboWaist,
-  METABO_WAIST_THRESHOLD,
   requiredDailyKcal,
   tdee,
   totalKcalToGoal,
@@ -137,20 +135,8 @@ export function YouPage({ profile }: { profile: Profile }) {
           <div className="stat">
             <div className="label">腹囲(最新の記録)</div>
             <div className="value">
-              {latest?.waist != null ? (
-                <span
-                  style={{
-                    color: isMetaboWaist(latest.waist, profile.sex)
-                      ? 'var(--danger)'
-                      : 'inherit',
-                  }}
-                >
-                  {latest.waist.toFixed(1)}
-                  <small> cm</small>
-                </span>
-              ) : (
-                '未記録'
-              )}
+              {latest?.waist != null ? latest.waist.toFixed(1) : '未記録'}
+              {latest?.waist != null && <small> cm</small>}
             </div>
           </div>
           <div className="stat">
@@ -276,14 +262,6 @@ export function YouPage({ profile }: { profile: Profile }) {
         {hasGoal && remainDays === 0 && totalKcal != null && totalKcal > 0 && (
           <p className="muted">目標日を過ぎています。目標達成日を更新してください。</p>
         )}
-        <p className="muted" style={{ marginBottom: 0, marginTop: hasGoal ? 8 : 0 }}>
-          メタボリックシンドロームの腹囲基準: 男性 {METABO_WAIST_THRESHOLD.male}cm以上・
-          女性 {METABO_WAIST_THRESHOLD.female}cm以上が該当。
-          {latest?.waist != null &&
-            (isMetaboWaist(latest.waist, profile.sex)
-              ? ' 現在の記録は基準に該当しています。'
-              : ' 現在の記録は基準内です。')}
-        </p>
       </div>
 
       <div className="card">
