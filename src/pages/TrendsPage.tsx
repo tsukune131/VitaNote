@@ -15,7 +15,9 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  BLOOD_TEST_FIELDS,
   db,
+  type BloodTestEntry,
   type ExerciseEntry,
   type HealthMetricEntry,
   type MealEntry,
@@ -74,7 +76,7 @@ interface DayRow {
   diastolic?: number;
 }
 
-type ChartKey = 'weight' | 'intake' | 'water' | 'steps' | 'burn' | 'meds' | 'health';
+type ChartKey = 'weight' | 'intake' | 'water' | 'steps' | 'burn' | 'meds' | 'health' | 'bloodtest';
 
 const CHART_TABS: { key: ChartKey; label: string }[] = [
   { key: 'weight', label: '体重・体脂肪率' },
@@ -119,10 +121,31 @@ export function TrendsPage({ profile }: { profile: Profile }) {
   const hasHealthTracking =
     profile.trackWaist || profile.trackBloodPressure || profile.trackGlucose;
 
+  const bloodTests = useLiveQuery(
+    async () => {
+      const rows = await db.bloodTests.where('profileId').equals(profile.id).toArray();
+      rows.sort((a, b) => a.date.localeCompare(b.date));
+      return rows;
+    },
+    [profile.id],
+  );
+
+  const bloodTestsByYear = useMemo(() => {
+    if (!bloodTests) return [];
+    const years = new Map<string, BloodTestEntry[]>();
+    for (const t of bloodTests) {
+      const y = t.date.slice(0, 4);
+      if (!years.has(y)) years.set(y, []);
+      years.get(y)!.push(t);
+    }
+    return [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [bloodTests]);
+
   const tabs = [
     ...CHART_TABS,
     ...(hasHealthTracking ? [{ key: 'health' as ChartKey, label: '検査値' }] : []),
     ...(profile.useMedication ? [{ key: 'meds' as ChartKey, label: '服薬' }] : []),
+    ...((bloodTests?.length ?? 0) > 0 ? [{ key: 'bloodtest' as ChartKey, label: '血液検査' }] : []),
   ];
 
   function moveChart(delta: number) {
@@ -351,11 +374,13 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
   return (
     <div>
-      <div className="date-nav">
-        <button onClick={() => { setMonth((m) => addMonths(m, -1)); setWaterDate(undefined); setStepsDate(undefined); }}>◀</button>
-        <div className="title">{formatMonth(month)}</div>
-        <button onClick={() => { setMonth((m) => addMonths(m, 1)); setWaterDate(undefined); setStepsDate(undefined); }}>▶</button>
-      </div>
+      {chart !== 'bloodtest' && (
+        <div className="date-nav">
+          <button onClick={() => { setMonth((m) => addMonths(m, -1)); setWaterDate(undefined); setStepsDate(undefined); }}>◀</button>
+          <div className="title">{formatMonth(month)}</div>
+          <button onClick={() => { setMonth((m) => addMonths(m, 1)); setWaterDate(undefined); setStepsDate(undefined); }}>▶</button>
+        </div>
+      )}
 
       <div className="chart-nav">
         <button onClick={() => moveChart(-1)} aria-label="前のグラフ">◀</button>
@@ -373,7 +398,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         <button onClick={() => moveChart(1)} aria-label="次のグラフ">▶</button>
       </div>
 
-      {!hasAnyData && (
+      {chart !== 'bloodtest' && !hasAnyData && (
         <div className="card">
           <div className="empty-note">
             この月の記録がまだありません。
@@ -382,6 +407,48 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           </div>
         </div>
       )}
+
+      {chart === 'bloodtest' &&
+        (bloodTestsByYear.length === 0 ? (
+          <div className="card">
+            <div className="empty-note">
+              血液検査の記録がまだありません。
+              <br />
+              「あなた」タブから健康診断・血液検査の結果を登録できます。
+            </div>
+          </div>
+        ) : (
+          bloodTestsByYear.map(([year, tests]) => (
+            <div className="card" key={year}>
+              <h2>{year}年</h2>
+              <div className="table-scroll">
+                <table className="bloodtest-table">
+                  <thead>
+                    <tr>
+                      <th>項目</th>
+                      {tests.map((t) => (
+                        <th key={t.id}>{formatDateShort(t.date)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {BLOOD_TEST_FIELDS.map((f) => (
+                      <tr key={f.key}>
+                        <td>
+                          {f.label}
+                          {f.unit && <span className="muted"> {f.unit}</span>}
+                        </td>
+                        {tests.map((t) => (
+                          <td key={t.id}>{t[f.key] ?? '—'}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))
+        ))}
 
       {chart === 'weight' && (
       <ChartCard title="体重" sub={profile.targetWeightKg != null ? `点線 = 目標 ${profile.targetWeightKg}kg` : undefined}>

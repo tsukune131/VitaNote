@@ -121,6 +121,40 @@ export interface HealthMetricEntry {
   glucose?: number; // 血糖値(mg/dL)
 }
 
+/**
+ * 健康診断・数か月に一度の血液検査の結果。日々の「きょう」入力ではなく、
+ * 「あなた」タブで検査日を指定して都度登録する(1回=1行)
+ */
+export interface BloodTestEntry {
+  id: number;
+  profileId: number;
+  date: string; // 検査日 YYYY-MM-DD
+  hba1c?: number; // HbA1c(%)
+  ldl?: number; // LDLコレステロール(mg/dL)
+  hdl?: number; // HDLコレステロール(mg/dL)
+  tg?: number; // 中性脂肪(mg/dL)
+  ast?: number; // AST/GOT(U/L)
+  alt?: number; // ALT/GPT(U/L)
+  ggtp?: number; // γ-GTP(U/L)
+  uricAcid?: number; // 尿酸(mg/dL)
+  egfr?: number; // eGFR(mL/分/1.73㎡)
+}
+
+type BloodTestMetricKey = keyof Omit<BloodTestEntry, 'id' | 'profileId' | 'date'>;
+
+/** 血液検査の項目一覧(あなたタブの入力フォーム・ふりかえりの表で共用) */
+export const BLOOD_TEST_FIELDS: { key: BloodTestMetricKey; label: string; unit: string }[] = [
+  { key: 'hba1c', label: 'HbA1c', unit: '%' },
+  { key: 'ldl', label: 'LDL', unit: 'mg/dL' },
+  { key: 'hdl', label: 'HDL', unit: 'mg/dL' },
+  { key: 'tg', label: '中性脂肪(TG)', unit: 'mg/dL' },
+  { key: 'ast', label: 'AST', unit: 'U/L' },
+  { key: 'alt', label: 'ALT', unit: 'U/L' },
+  { key: 'ggtp', label: 'γ-GTP', unit: 'U/L' },
+  { key: 'uricAcid', label: '尿酸', unit: 'mg/dL' },
+  { key: 'egfr', label: 'eGFR', unit: '' },
+];
+
 export interface Setting {
   key: string;
   value: string;
@@ -138,6 +172,7 @@ export const db = new Dexie('weight-app') as Dexie & {
   medications: EntityTable<Medication, 'id'>;
   medicationLogs: EntityTable<MedicationLog, 'id'>;
   healthMetrics: EntityTable<HealthMetricEntry, 'id'>;
+  bloodTests: EntityTable<BloodTestEntry, 'id'>;
   settings: EntityTable<Setting, 'key'>;
 };
 
@@ -186,6 +221,11 @@ db.version(7).stores({
   healthMetrics: '++id, profileId, [profileId+date]',
 });
 
+// v8: 健康診断・血液検査の結果(不定期、あなたタブで管理)を追加
+db.version(8).stores({
+  bloodTests: '++id, profileId, [profileId+date]',
+});
+
 export async function setActiveProfileId(id: number): Promise<void> {
   await db.settings.put({ key: 'activeProfileId', value: String(id) });
 }
@@ -205,6 +245,7 @@ export async function deleteProfile(id: number): Promise<void> {
       db.medications,
       db.medicationLogs,
       db.healthMetrics,
+      db.bloodTests,
     ],
     async () => {
       await db.profiles.delete(id);
@@ -219,6 +260,7 @@ export async function deleteProfile(id: number): Promise<void> {
         db.medications,
         db.medicationLogs,
         db.healthMetrics,
+        db.bloodTests,
       ]) {
         await table.where('profileId').equals(id).delete();
       }

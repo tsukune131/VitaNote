@@ -543,6 +543,45 @@ button:disabled {
   font-size: 14px;
 }
 
+/* ---- 血液検査 ---- */
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 12px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.bloodtest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.bloodtest-table th,
+.bloodtest-table td {
+  padding: 6px 10px;
+  border-bottom: 1px dashed var(--border);
+  white-space: nowrap;
+}
+
+.bloodtest-table th:first-child,
+.bloodtest-table td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--card);
+}
+
+.bloodtest-table th:not(:first-child),
+.bloodtest-table td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- マイメニュー ---- */
 
 .menu-toggle {
