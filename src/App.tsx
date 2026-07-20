@@ -49,7 +49,7 @@ export default function App() {
   return (
     <div>
       <div className="app-header">
-        <h1>WeightNote</h1>
+        <h1>VitaNote</h1>
       </div>
 
       {tab === 'you' && <YouPage profile={profile} />}

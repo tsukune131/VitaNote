@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // mode 'capacitor' はネイティブアプリ用ビルド:
 // 相対パス配信+Service Worker(PWA)なし。通常はGitHub Pagesのサブパス配信
 export default defineConfig(({ mode }) => ({
-  base: mode === 'capacitor' ? './' : '/WeightNote/',
+  base: mode === 'capacitor' ? './' : '/VitaNote/',
   plugins: [
     react(),
     ...(mode === 'capacitor'
@@ -15,9 +15,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'WeightNote',
-        short_name: 'WeightNote',
-        description: '体重・食事・飲水・歩数を毎日書き込む健康手帳アプリ',
+        name: 'VitaNote',
+        short_name: 'VitaNote',
+        description: '体重・血圧・血糖値・服薬などを毎日書き込む健康手帳アプリ',
         lang: 'ja',
         display: 'standalone',
         theme_color: '#f5f5f0',

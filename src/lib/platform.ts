@@ -46,7 +46,7 @@ export async function scheduleWeightReminders(times: string[]): Promise<boolean>
     notifications: [
       {
         id: WEIGHT_MANDATORY_ID,
-        title: 'WeightNote',
+        title: 'VitaNote',
         body: 'きょうの体重を書き込みましょう',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
       },
@@ -87,7 +87,7 @@ export async function scheduleWaistReminder(dayOfMonth: number): Promise<boolean
     notifications: [
       {
         id: WAIST_NOTIFICATION_ID,
-        title: 'WeightNote',
+        title: 'VitaNote',
         body: '腹囲を記録しましょう',
         schedule: { on: { day: dayOfMonth, hour: 9, minute: 0 }, allowWhileIdle: true },
       },
