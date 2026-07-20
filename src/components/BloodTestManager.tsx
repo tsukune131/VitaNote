@@ -20,6 +20,7 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [date, setDate] = useState(todayStr());
   const [values, setValues] = useState<Record<string, string>>({});
+  const [savedMsg, setSavedMsg] = useState('');
 
   function resetForm() {
     setEditingId(null);
@@ -40,14 +41,17 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
 
   async function save() {
     if (!date) return;
+    const isEdit = editingId != null;
     const data: Record<string, unknown> = { date };
     for (const f of BLOOD_TEST_FIELDS) {
       const n = Number(values[f.key]);
       data[f.key] = n > 0 ? n : undefined;
     }
-    if (editingId != null) await db.bloodTests.update(editingId, data);
+    if (isEdit) await db.bloodTests.update(editingId, data);
     else await db.bloodTests.add({ profileId, ...data } as never);
     resetForm();
+    setSavedMsg(isEdit ? '更新しました ✓' : '追加しました ✓');
+    setTimeout(() => setSavedMsg(''), 1500);
   }
 
   async function remove(id: number) {
@@ -110,6 +114,11 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
           <button className="secondary" onClick={resetForm} style={{ flex: '0 0 auto' }}>
             キャンセル
           </button>
+        )}
+        {savedMsg && (
+          <span className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>
+            {savedMsg}
+          </span>
         )}
       </div>
     </div>

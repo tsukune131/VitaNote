@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Food, type MealSlot, type Profile } from '../db';
+import { AutosaveNote, useAutosave } from '../components/autosave';
 import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
@@ -65,29 +66,6 @@ function useEntry<T>(table: string, profileId: number, date: string): T | undefi
   return useLiveQuery(
     () => db.table(table).where('[profileId+date]').equals([profileId, date]).first() as Promise<T | undefined>,
     [table, profileId, date],
-  );
-}
-
-/**
- * 入力が変わったら少し待って(デバウンス)自動保存する。保存ボタンを不要にする。
- * signature が変わるたびにタイマーをリセットするので、入力が止まってから保存される。
- */
-function useAutosave(signature: string, dirty: boolean, save: () => Promise<void>) {
-  const saveRef = useRef(save);
-  saveRef.current = save;
-  useEffect(() => {
-    if (!dirty) return;
-    const t = setTimeout(() => void saveRef.current(), 600);
-    return () => clearTimeout(t);
-  }, [signature, dirty]);
-}
-
-/** 自動保存の状態表示(保存ボタンの代わり) */
-function AutosaveNote({ dirty, saved }: { dirty: boolean; saved: boolean }) {
-  return (
-    <span className="muted" style={{ fontSize: 12, alignSelf: 'center' }}>
-      {dirty ? '自動保存します…' : saved ? '保存済み ✓' : ''}
-    </span>
   );
 }
 

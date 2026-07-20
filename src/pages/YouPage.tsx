@@ -78,6 +78,8 @@ export function YouPage({ profile }: { profile: Profile }) {
   const dailyKcal =
     totalKcal != null && remainDays != null ? requiredDailyKcal(totalKcal, remainDays) : undefined;
 
+  const [goalSaved, setGoalSaved] = useState(false);
+
   async function saveGoal() {
     const fat = Number(targetFat);
     const waist = Number(targetWaist);
@@ -87,6 +89,8 @@ export function YouPage({ profile }: { profile: Profile }) {
       targetWaistCm: waist > 0 ? waist : undefined,
       targetDate: targetDate || undefined,
     });
+    setGoalSaved(true);
+    setTimeout(() => setGoalSaved(false), 1500);
   }
 
   return (
@@ -201,7 +205,7 @@ export function YouPage({ profile }: { profile: Profile }) {
             />
           </label>
         </div>
-        <button onClick={() => void saveGoal()}>目標を保存</button>
+        <button onClick={() => void saveGoal()}>{goalSaved ? '保存しました ✓' : '目標を保存'}</button>
 
         {hasGoal && totalKcal != null && remainDays != null && dailyKcal != null && (
           <div className="stat-grid" style={{ marginTop: 12 }}>
