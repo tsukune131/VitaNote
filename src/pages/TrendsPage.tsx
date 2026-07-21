@@ -21,9 +21,6 @@ import {
   type ExerciseEntry,
   type HealthMetricEntry,
   type MealEntry,
-  type MealSlot,
-  type Medication,
-  type MedicationLog,
   type NoteEntry,
   type Profile,
   type StepEntry,
@@ -41,15 +38,12 @@ import {
 } from '../lib/calc';
 import {
   addMonths,
-  dayOfMonthOf,
   daysInMonth,
   formatDateShort,
   formatMonth,
-  isLastDayOfMonth,
   monthDates,
   toMonthStr,
   todayStr,
-  weekdayOf,
 } from '../lib/date';
 import { useChartTheme, type ChartTheme } from '../lib/chartTheme';
 
@@ -76,7 +70,7 @@ interface DayRow {
   diastolic?: number;
 }
 
-type ChartKey = 'weight' | 'intake' | 'steps' | 'burn' | 'meds' | 'health' | 'bloodtest';
+type ChartKey = 'weight' | 'intake' | 'steps' | 'burn' | 'health' | 'bloodtest';
 
 const CHART_TABS: { key: ChartKey; label: string }[] = [
   { key: 'weight', label: '体重・体脂肪率・腹囲' },
@@ -84,25 +78,6 @@ const CHART_TABS: { key: ChartKey; label: string }[] = [
   { key: 'steps', label: '歩数' },
   { key: 'burn', label: '消費・貯金' },
 ];
-
-const MEAL_LABELS: Record<MealSlot, string> = {
-  breakfast: '朝食',
-  lunch: '昼食',
-  dinner: '夕食',
-  snack: '間食',
-};
-
-/** その日にその薬を飲む予定があるか(登録日より前は対象外) */
-function isDueOn(m: Medication, date: string): boolean {
-  if (m.startDate && date < m.startDate) return false;
-  const freq = m.frequency ?? 'meal';
-  if (freq === 'weekly') return (m.weekday ?? 0) === weekdayOf(date);
-  if (freq === 'monthly')
-    return (
-      m.dayOfMonth === dayOfMonthOf(date) || ((m.dayOfMonth ?? 1) > 28 && isLastDayOfMonth(date))
-    );
-  return true; // 食事ごとの薬は毎日
-}
 
 export function TrendsPage({ profile }: { profile: Profile }) {
   const [month, setMonth] = useState(() => toMonthStr(new Date()));
@@ -141,7 +116,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
   const tabs = [
     ...CHART_TABS,
     ...(hasOptionalHealthTracking ? [{ key: 'health' as ChartKey, label: '検査値' }] : []),
-    ...(profile.useMedication ? [{ key: 'meds' as ChartKey, label: '服薬' }] : []),
     ...((bloodTests?.length ?? 0) > 0 ? [{ key: 'bloodtest' as ChartKey, label: '血液検査' }] : []),
   ];
 
@@ -168,9 +142,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         steps,
         exercises,
         notes,
-        medLogs,
         allWeights,
-        medications,
         healthMetrics,
       ] = await Promise.all([
           range('weights'),
@@ -179,12 +151,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           range('steps'),
           range('exercises'),
           range('notes'),
-          db.medicationLogs
-            .where('[profileId+date]')
-            .between([profile.id, start], [profile.id, end], true, true)
-            .toArray(),
           db.weights.where('profileId').equals(profile.id).toArray(),
-          db.medications.where('profileId').equals(profile.id).toArray(),
           db.healthMetrics
             .where('[profileId+date]')
             .between([profile.id, start], [profile.id, end], true, true)
@@ -197,8 +164,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         steps: steps as StepEntry[],
         exercises: exercises as ExerciseEntry[],
         notes: notes as NoteEntry[],
-        medLogs: medLogs as MedicationLog[],
-        medications: medications as Medication[],
         healthMetrics: healthMetrics as HealthMetricEntry[],
         allWeights,
       };
@@ -217,49 +182,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     const v = requiredDailyKcal(total, days);
     return Number.isFinite(v) && v > 0 ? v : undefined;
   }, [raw, profile.targetWeightKg, profile.targetDate]);
-
-  // 服薬の集計(今日はまだ飲む時間が残っているので、未服用でも飲み忘れに数えない)
-  const medsStats = useMemo(() => {
-    if (!raw || !profile.useMedication) return undefined;
-    const today = todayStr();
-    let expected = 0;
-    let taken = 0;
-    const missed: { date: string; name: string; detail: string }[] = [];
-    for (const date of monthDates(month)) {
-      if (date > today) break;
-      const isToday = date === today;
-      for (const m of raw.medications) {
-        if (!isDueOn(m, date)) continue;
-        const freq = m.frequency ?? 'meal';
-        if (freq === 'meal') {
-          for (const meal of m.meals ?? []) {
-            const ok = raw.medLogs.some(
-              (l) => l.date === date && l.medicationId === m.id && l.meal === meal,
-            );
-            if (ok) {
-              expected++;
-              taken++;
-            } else if (!isToday) {
-              expected++;
-              missed.push({ date, name: m.name, detail: MEAL_LABELS[meal] });
-            }
-          }
-        } else {
-          const ok = raw.medLogs.some(
-            (l) => l.date === date && l.medicationId === m.id && l.meal == null,
-          );
-          if (ok) {
-            expected++;
-            taken++;
-          } else if (!isToday) {
-            expected++;
-            missed.push({ date, name: m.name, detail: freq === 'weekly' ? '週1回' : '月1回' });
-          }
-        }
-      }
-    }
-    return { expected, taken, missed };
-  }, [raw, month, profile.useMedication]);
 
   const rows: DayRow[] = useMemo(() => {
     if (!raw) return [];
@@ -757,54 +679,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           )}
         </>
       )}
-
-      {chart === 'meds' &&
-        (medsStats == null || medsStats.expected === 0 ? (
-          <div className="card">
-            <div className="empty-note">
-              この月の服薬記録がまだありません。
-              <br />
-              「きょう」タブの食事カードから薬を登録できます。
-            </div>
-          </div>
-        ) : (
-          <div className="card">
-            <h2>この月の服薬</h2>
-            <div className="stat-grid">
-              <div className="stat">
-                <div className="label">服薬達成率</div>
-                <div className="value">
-                  {Math.round((medsStats.taken / medsStats.expected) * 100)}
-                  <small> %</small>
-                </div>
-              </div>
-              <div className="stat">
-                <div className="label">服用回数</div>
-                <div className="value">
-                  {medsStats.taken}
-                  <small> / {medsStats.expected}回</small>
-                </div>
-              </div>
-            </div>
-            {medsStats.missed.length === 0 ? (
-              <p className="muted" style={{ marginBottom: 0 }}>
-                飲み忘れはありません。すばらしい!
-              </p>
-            ) : (
-              <>
-                <h3>飲み忘れ</h3>
-                {medsStats.missed.map((x, i) => (
-                  <div className="list-item" key={`${x.date}-${x.name}-${x.detail}-${i}`}>
-                    <span>
-                      {formatDateShort(x.date)} {x.name}
-                    </span>
-                    <span className="muted">{x.detail}</span>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        ))}
 
       {(raw?.notes.length ?? 0) > 0 && (
         <div className="card">
