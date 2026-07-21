@@ -146,6 +146,7 @@ button {
 
 input[type='number'],
 input[type='text'],
+input[type='search'],
 input[type='date'],
 input[type='time'],
 select {
@@ -174,6 +175,14 @@ input[type='time'] {
   min-width: 0;
   min-height: 38px; /* iOSで値が空のとき潰れるのを防ぐ */
   text-align: left;
+}
+
+/* iOSのsearchはネイティブの丸角・余白が優先され、他の入力欄と
+   高さが揃わないためappearanceを外す */
+input[type='search'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
 }
 
 input::-webkit-date-and-time-value {
