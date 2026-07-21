@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Food, type MealSlot, type Profile } from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
+import { type FoodPreset } from '../data/foodPresets';
+import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
 import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
@@ -342,12 +344,37 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [newKcal, setNewKcal] = useState('');
+  // 料理名検索
+  const [query, setQuery] = useState('');
+  const [portion, setPortion] = useState(1);
+  const results = useMemo(() => searchFoods(query), [query]);
+
+  function addKcal(key: string, kcal: number) {
+    setValues((v) => ({ ...v, [key]: String((Number(v[key]) || 0) + kcal) }));
+    setTimes((t) => (t[key] ? t : { ...t, [key]: nowTimeStr() }));
+  }
 
   async function applyFood(key: string, food: Food) {
     // 選んだメニューのkcalをその食事に加算。時刻が未入力なら現在時刻を入れる
-    setValues((v) => ({ ...v, [key]: String((Number(v[key]) || 0) + food.kcal) }));
-    setTimes((t) => (t[key] ? t : { ...t, [key]: nowTimeStr() }));
+    addKcal(key, food.kcal);
     await db.foods.update(food.id, { uses: food.uses + 1 });
+  }
+
+  /**
+   * 同梱テーブルから選んだぶんを加算し、マイメニューにも覚えさせる。
+   * 次回は検索せずチップから選べるようにするのが狙い。
+   * 保存するのは倍率をかける前の基準kcal(量は毎回選び直せる)。
+   */
+  async function applyPreset(key: string, preset: FoodPreset) {
+    addKcal(key, applyPortion(preset.kcal, portion));
+    const existing = await db.foods
+      .where('profileId')
+      .equals(profileId)
+      .filter((f) => f.name === preset.name)
+      .first();
+    if (existing) await db.foods.update(existing.id, { uses: existing.uses + 1 });
+    else await db.foods.add({ profileId, name: preset.name, kcal: preset.kcal, uses: 1 } as never);
+    setQuery('');
   }
 
   async function addFood() {
@@ -514,16 +541,63 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
             className={`ghost menu-toggle ${menuFor === key ? 'active' : ''}`}
             onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
           >
-            ＋ マイメニューから選ぶ
+            ＋ メニューから追加
           </button>
           {menuFor === key && (
             <div className="menu-panel">
-              {(foods ?? []).length === 0 && (
+              <label className="field" style={{ marginBottom: 6 }}>
+                料理名で探す
+                <input
+                  type="search"
+                  placeholder="例: カレー、ご飯、ラーメン"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
+              {query.trim() !== '' && (
+                <>
+                  <div className="portion-row">
+                    <span className="muted">量</span>
+                    {PORTIONS.map((p) => (
+                      <button
+                        key={p.label}
+                        className={`ghost portion-btn ${portion === p.mult ? 'active' : ''}`}
+                        onClick={() => setPortion(p.mult)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  {results.length === 0 ? (
+                    <p className="muted" style={{ margin: '6px 0' }}>
+                      見つかりませんでした。下の欄で名前とkcalを登録できます。
+                    </p>
+                  ) : (
+                    <ul className="food-results">
+                      {results.map((f) => (
+                        <li key={f.name}>
+                          <button onClick={() => void applyPreset(key, f)}>
+                            <span className="food-name">{f.name}</span>
+                            <span className="muted food-unit">{f.unit}</span>
+                            <span className="food-kcal">
+                              約{applyPortion(f.kcal, portion)}kcal
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="muted food-note">
+                    カロリーは一般的な目安です。店やレシピで変わります。
+                  </p>
+                </>
+              )}
+              {query.trim() === '' && (foods ?? []).length === 0 && (
                 <p className="muted" style={{ margin: '0 0 6px' }}>
-                  よく食べる物を登録すると、タップするだけでカロリーを入力できます。
+                  料理名で検索するか、よく食べる物を登録しておくとタップだけで入力できます。
                 </p>
               )}
-              {(foods ?? []).length > 0 && (
+              {query.trim() === '' && (foods ?? []).length > 0 && (
                 <div className="chips">
                   {foods!.map((f) => (
                     <span className="chip" key={f.id}>
