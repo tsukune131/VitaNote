@@ -163,7 +163,7 @@ export function YouPage({ profile }: { profile: Profile }) {
         <h2>目標</h2>
         <div className="row">
           <label className="field">
-            目標体重(kg)
+            体重(kg)
             <input
               type="number"
               inputMode="decimal"
@@ -174,7 +174,7 @@ export function YouPage({ profile }: { profile: Profile }) {
             />
           </label>
           <label className="field">
-            目標体脂肪率(%)
+            体脂肪率(%)
             <input
               type="number"
               inputMode="decimal"
@@ -186,7 +186,7 @@ export function YouPage({ profile }: { profile: Profile }) {
             />
           </label>
           <label className="field">
-            目標腹囲(cm)
+            腹囲(cm)
             <input
               type="number"
               inputMode="decimal"
@@ -197,7 +197,7 @@ export function YouPage({ profile }: { profile: Profile }) {
             />
           </label>
           <label className="field field-fixed-date">
-            目標達成日
+            達成日
             <input
               type="date"
               value={targetDate}
