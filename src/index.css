@@ -764,7 +764,11 @@ button:disabled {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
+  /* 内容欄は他の欄に幅を譲って狭いので、候補は右にはみ出して広く出す */
+  right: auto;
+  min-width: 100%;
+  width: 300px;
+  max-width: min(90vw, 360px);
   z-index: 20;
   margin-top: 4px;
   background: var(--card);
