@@ -4,8 +4,7 @@ import { db, type Food, type MealItem, type MealSlot, type Profile } from '../db
 import { AutosaveNote, useAutosave } from '../components/autosave';
 import { type FoodPreset } from '../data/foodPresets';
 import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
-import { EXERCISE_PRESETS } from '../data/exercisePresets';
-import { matchExercise } from '../lib/exerciseSearch';
+import { matchExercise, searchExercises } from '../lib/exerciseSearch';
 import { withItemAdded, withItemRemoved } from '../lib/mealItems';
 import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
@@ -894,6 +893,9 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
   const [kcal, setKcal] = useState('');
   // 推定値をそのまま使うか、ユーザーが上書きしたかを覚えておく
   const [kcalEdited, setKcalEdited] = useState(false);
+  // 候補リストを出すか。datalistは初回タップで開かない端末があるので自前で出す
+  const [showSuggest, setShowSuggest] = useState(false);
+  const suggestions = useMemo(() => searchExercises(name, 8), [name]);
 
   const refWeight = pickReferenceWeight(weights ?? [], date);
   const preset = matchExercise(name);
@@ -921,6 +923,7 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
     setMinutes('');
     setKcal('');
     setKcalEdited(false);
+    setShowSuggest(false);
   }
 
   return (
@@ -931,21 +934,39 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
         種目と時間を入れると消費カロリーの目安が入ります。
       </p>
       <div className="row" style={{ alignItems: 'flex-end' }}>
-        <label className="field" style={{ marginBottom: 0 }}>
+        <label className="field exercise-name" style={{ marginBottom: 0 }}>
           内容
           <input
             type="text"
-            list="exercise-presets"
             placeholder="例: 水泳、筋トレ"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              setShowSuggest(true);
+            }}
+            onFocus={() => setShowSuggest(true)}
+            onBlur={() => setTimeout(() => setShowSuggest(false), 120)}
           />
+          {showSuggest && suggestions.length > 0 && (
+            <ul className="food-results exercise-suggest">
+              {suggestions.map((p) => (
+                <li key={p.name}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setName(p.name);
+                      setShowSuggest(false);
+                    }}
+                  >
+                    <span className="food-name">{p.name}</span>
+                    <span className="muted food-unit">{p.cat}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </label>
-        <datalist id="exercise-presets">
-          {EXERCISE_PRESETS.map((p) => (
-            <option key={p.name} value={p.name} />
-          ))}
-        </datalist>
         <label className="field field-fixed-min" style={{ marginBottom: 0 }}>
           時間(分)
           <input

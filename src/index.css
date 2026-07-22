@@ -755,6 +755,22 @@ button:disabled {
   font-size: 12px;
 }
 
+/* 運動の内容欄に重ねて出す候補リスト */
+.exercise-name {
+  position: relative;
+}
+
+.exercise-suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 4px;
+  background: var(--card);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
 /* ---- オンボーディング ---- */
 
 .onboarding-dots {
