@@ -23,14 +23,30 @@ async function plugin() {
   return Health;
 }
 
-/** この端末でヘルスケアが使えるか */
-export async function isHealthAvailable(): Promise<boolean> {
-  if (!isNativeApp()) return false;
+export interface HealthAvailability {
+  available: boolean;
+  /** 使えないときの理由。実機でしか起きない失敗を画面から追えるようにするため表示する */
+  reason?: string;
+}
+
+/**
+ * この端末でヘルスケアが使えるか。
+ * ネイティブ呼び出しが応答を返さないケースでも画面が「判定中」のまま
+ * 固まらないよう、5秒で打ち切る。
+ */
+export async function checkHealthAvailability(): Promise<HealthAvailability> {
+  if (!isNativeApp()) return { available: false, reason: 'アプリ版ではありません' };
   try {
-    const { available } = await (await plugin()).isAvailable();
-    return available;
-  } catch {
-    return false;
+    const timeout = new Promise<HealthAvailability>((resolve) =>
+      setTimeout(() => resolve({ available: false, reason: 'ヘルスケアの応答がありません' }), 5000),
+    );
+    const check = (async (): Promise<HealthAvailability> => {
+      const { available, reason } = await (await plugin()).isAvailable();
+      return { available, reason };
+    })();
+    return await Promise.race([check, timeout]);
+  } catch (e) {
+    return { available: false, reason: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -40,7 +56,7 @@ export async function isHealthAvailable(): Promise<boolean> {
  * 実際に読めたかどうかは importStepsFromHealth() の戻り値で判断する。
  */
 export async function requestHealthAccess(): Promise<boolean> {
-  if (!(await isHealthAvailable())) return false;
+  if (!(await checkHealthAvailability()).available) return false;
   try {
     await (await plugin()).requestAuthorization({
       read: [...READ_TYPES],

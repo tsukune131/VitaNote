@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react';
 import { db, type Profile } from '../db';
-import { importStepsFromHealth, isHealthAvailable, requestHealthAccess } from '../lib/health';
+import {
+  checkHealthAvailability,
+  importStepsFromHealth,
+  requestHealthAccess,
+  type HealthAvailability,
+} from '../lib/health';
 
 /**
  * ヘルスケア(HealthKit)連携の設定。
  * iOSのアプリ版でしか使えないため、それ以外の環境では案内だけを出す。
+ * 実機でしか再現しない不具合を画面から追えるよう、使えないときは理由も出す。
  */
 export function HealthSyncSettings({ profile }: { profile: Profile }) {
-  const [available, setAvailable] = useState<boolean | undefined>(undefined);
+  const [status, setStatus] = useState<HealthAvailability | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | undefined>(undefined);
   const on = profile.syncHealth ?? false;
 
   useEffect(() => {
-    void isHealthAvailable().then(setAvailable);
+    void checkHealthAvailability().then(setStatus);
   }, []);
 
   async function toggle(checked: boolean) {
@@ -43,12 +49,14 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
     }
   }
 
-  if (available === undefined) return null; // 判定中
-
   return (
     <div className="card">
       <h2>ヘルスケア連携</h2>
-      {available ? (
+      {status === undefined ? (
+        <p className="muted" style={{ marginBottom: 0 }}>
+          確認中…
+        </p>
+      ) : status.available ? (
         <>
           <label className="checkbox-inline">
             <input
@@ -70,9 +78,16 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
           )}
         </>
       ) : (
-        <p className="muted" style={{ marginBottom: 0 }}>
-          ヘルスケアとの連携はiPhoneのアプリ版でご利用いただけます。
-        </p>
+        <>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            ヘルスケアとの連携はiPhoneのアプリ版でご利用いただけます。
+          </p>
+          {status.reason && (
+            <p className="muted" style={{ marginBottom: 0, fontSize: 12 }}>
+              ({status.reason})
+            </p>
+          )}
+        </>
       )}
     </div>
   );
