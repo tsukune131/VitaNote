@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { db } from '../db';
 import { addDays, toDateStr, todayStr } from './date';
 import { isNativeApp } from './platform';
@@ -18,9 +19,21 @@ const WRITE_TYPES = ['weight', 'bodyFat'] as const;
 /** 起動時にさかのぼって取り込む日数(前日以前は手入力を上書きしない) */
 const IMPORT_DAYS = 7;
 
+/** Capacitorに登録されるプラグイン名(プラグイン側のjsName) */
+const PLUGIN_NAME = 'Health';
+
 async function plugin() {
-  const { Health } = await import('@capgo/capacitor-health');
-  return Health;
+  // ネイティブに登録されていないプラグインを呼ぶと、Capacitorは応答を返さず
+  // Promiseが永久に解決しない。先に登録の有無を確かめて、待たずに失敗させる
+  if (!Capacitor.isPluginAvailable(PLUGIN_NAME)) {
+    throw new Error('プラグインがネイティブに登録されていません');
+  }
+  try {
+    const { Health } = await import('@capgo/capacitor-health');
+    return Health;
+  } catch (e) {
+    throw new Error(`プラグインの読み込みに失敗しました: ${e instanceof Error ? e.message : e}`);
+  }
 }
 
 export interface HealthAvailability {
@@ -38,7 +51,10 @@ export async function checkHealthAvailability(): Promise<HealthAvailability> {
   if (!isNativeApp()) return { available: false, reason: 'アプリ版ではありません' };
   try {
     const timeout = new Promise<HealthAvailability>((resolve) =>
-      setTimeout(() => resolve({ available: false, reason: 'ヘルスケアの応答がありません' }), 5000),
+      setTimeout(
+        () => resolve({ available: false, reason: 'プラグインの読み込みが終わりません' }),
+        5000,
+      ),
     );
     const check = (async (): Promise<HealthAvailability> => {
       const { available, reason } = await (await plugin()).isAvailable();
