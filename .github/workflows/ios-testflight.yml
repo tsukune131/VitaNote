@@ -11,6 +11,7 @@ on:
         options:
           - beta
           - certificates
+          - refresh_profiles
 
 jobs:
   build:

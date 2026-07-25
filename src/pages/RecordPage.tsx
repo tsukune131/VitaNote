@@ -29,6 +29,7 @@ import {
   todayStr,
   weekdayOf,
 } from '../lib/date';
+import { writeBodyMetricsToHealth } from '../lib/health';
 import { cancelTodaysConditionalWeightReminders } from '../lib/platform';
 import { tipForDate } from '../lib/tips';
 
@@ -56,11 +57,11 @@ export function RecordPage({ profile }: { profile: Profile }) {
         </button>
       </div>
 
-      <BodyMetricsSection key={`w-${profile.id}-${date}`} profileId={profile.id} date={date} />
+      <BodyMetricsSection key={`w-${profile.id}-${date}`} profile={profile} date={date} />
       <HealthMetricsSection key={`h-${profile.id}-${date}`} profile={profile} date={date} />
       <MealSection key={`m-${profile.id}-${date}`} profile={profile} date={date} />
       <WaterSection profileId={profile.id} date={date} />
-      <StepsSection key={`s-${profile.id}-${date}`} profileId={profile.id} date={date} />
+      <StepsSection key={`s-${profile.id}-${date}`} profile={profile} date={date} />
       <ExerciseSection profileId={profile.id} date={date} />
       <NoteSection key={`n-${profile.id}-${date}`} profileId={profile.id} date={date} />
       <DailySummary profile={profile} date={date} />
@@ -77,7 +78,8 @@ function useEntry<T>(table: string, profileId: number, date: string): T | undefi
 
 /* ---------- 体重・体脂肪率・腹囲 ---------- */
 
-function BodyMetricsSection({ profileId, date }: { profileId: number; date: string }) {
+function BodyMetricsSection({ profile, date }: { profile: Profile; date: string }) {
+  const profileId = profile.id;
   const weightEntry = useEntry<{ id: number; kg: number; bodyFatPct?: number }>(
     'weights',
     profileId,
@@ -119,6 +121,7 @@ function BodyMetricsSection({ profileId, date }: { profileId: number; date: stri
       const data = { kg: v, bodyFatPct: f > 0 ? f : undefined };
       if (weightEntry) await db.weights.update(weightEntry.id, data);
       else await db.weights.add({ profileId, date, ...data } as never);
+      if (profile.syncHealth) await writeBodyMetricsToHealth(date, v, data.bodyFatPct);
     }
 
     const waistData = { waist: w > 0 ? w : undefined };
@@ -789,7 +792,11 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
 
 /* ---------- 歩数 ---------- */
 
-function StepsSection({ profileId, date }: { profileId: number; date: string }) {
+function StepsSection({ profile, date }: { profile: Profile; date: string }) {
+  const profileId = profile.id;
+  // 連携中の「今日」はアプリを開くたびヘルスケアの値で上書きされるので手入力させない。
+  // 過去日は取り込みが手入力を上書きしないため、そのまま編集できる
+  const managedByHealth = (profile.syncHealth ?? false) && date === todayStr();
   const entry = useEntry<{ id: number; total: number; hourly?: number[] }>(
     'steps',
     profileId,
@@ -799,15 +806,17 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
   const [hourly, setHourly] = useState<string[]>(Array(24).fill(''));
   const [showHourly, setShowHourly] = useState(false);
 
+  // ヘルスケアからの取り込みは同じ行を更新するので、idだけでなく値の変化も見て
+  // 入力欄に反映する(反映しないと古い手入力値で上書きし返してしまう)
   useEffect(() => {
     if (entry) {
       setTotal(String(entry.total));
       if (entry.hourly) {
         setHourly(entry.hourly.map((v) => (v ? String(v) : '')));
-        setShowHourly(entry.hourly.some((v) => v > 0));
+        setShowHourly((v) => v || entry.hourly!.some((n) => n > 0));
       }
     }
-  }, [entry?.id]);
+  }, [entry?.id, entry?.total]);
 
   const hourlyNums = hourly.map((v) => Number(v) || 0);
   const hourlySum = hourlyNums.reduce((a, b) => a + b, 0);
@@ -826,34 +835,41 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
     else await db.steps.add({ profileId, date, ...data } as never);
   }
 
-  useAutosave(`${total}|${hasHourly}|${hourly.join(',')}`, dirty, save);
+  // 連携中の今日はヘルスケアが正なので、こちらから保存し返さない
+  useAutosave(`${total}|${hasHourly}|${hourly.join(',')}`, dirty && !managedByHealth, save);
 
   return (
     <div className="card">
       <h2>歩数</h2>
       <p className="muted" style={{ marginTop: 0 }}>
-        iPhoneのヘルスケアアプリの歩数を転記してください。
+        {managedByHealth
+          ? 'ヘルスケアから自動で取り込んでいます。アプリを開くたびに最新になります。'
+          : 'iPhoneのヘルスケアアプリの歩数を転記してください。'}
       </p>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="field" style={{ marginBottom: 0 }}>
-          1日の合計歩数{hasHourly && '(時間帯別の合計で上書き)'}
+          1日の合計歩数{hasHourly && !managedByHealth && '(時間帯別の合計で上書き)'}
           <input
             type="number"
             inputMode="numeric"
             min="0"
             value={hasHourly ? String(hourlySum) : total}
-            disabled={hasHourly}
+            disabled={hasHourly || managedByHealth}
             onChange={(e) => setTotal(e.target.value)}
           />
         </label>
-        <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />
+        {!managedByHealth && <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />}
       </div>
       <button
         className="ghost"
         style={{ marginTop: 8 }}
         onClick={() => setShowHourly((v) => !v)}
       >
-        {showHourly ? '▲ 時間帯別入力を閉じる' : '▼ 時間帯別(1時間ごと)に入力する'}
+        {showHourly
+          ? '▲ 時間帯別を閉じる'
+          : managedByHealth
+            ? '▼ 時間帯別(1時間ごと)を見る'
+            : '▼ 時間帯別(1時間ごと)に入力する'}
       </button>
       {showHourly && (
         <div className="hourly-grid" style={{ marginTop: 8 }}>
@@ -865,6 +881,7 @@ function StepsSection({ profileId, date }: { profileId: number; date: string }) 
                 inputMode="numeric"
                 min="0"
                 value={v}
+                disabled={managedByHealth}
                 onChange={(e) =>
                   setHourly((arr) => arr.map((x, i) => (i === h ? e.target.value : x)))
                 }

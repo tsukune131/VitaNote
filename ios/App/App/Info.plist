@@ -27,6 +27,10 @@
 	     Sentryを有効化するなど外部通信を足したら申告し直しが必要 -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>ヘルスケアから歩数を読み取り、手で転記しなくても記録できるようにします。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>記録した体重・体脂肪率をヘルスケアに書き戻し、ほかのアプリでも使えるようにします。</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -27,6 +27,20 @@ platform :ios do
     )
   end
 
+  desc "プロビジョニングプロファイルを作り直す(App IDのCapabilityを変えたときに実行)"
+  lane :refresh_profiles do
+    setup_ci(force: true)
+    # 既存のプロファイルは期限切れではないので force: true が無いと作り直されず、
+    # 新しく足した Capability(HealthKitなど)が入らないままになる
+    match(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      api_key: asc_api_key,
+      readonly: false,
+      force: true
+    )
+  end
+
   desc "ビルドして TestFlight にアップロードする"
   lane :beta do
     setup_ci(force: true)

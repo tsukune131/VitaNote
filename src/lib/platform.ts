@@ -5,17 +5,6 @@ export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
 }
 
-/**
- * その日の歩数をネイティブ(HealthKit)から取得する。
- * フェーズCでHealthKitプラグイン(候補: @perfood/capacitor-healthkit)を
- * 差し込むまではundefinedを返し、UIは手入力のまま動く。
- */
-export async function fetchNativeSteps(_date: string): Promise<number | undefined> {
-  if (!isNativeApp()) return undefined;
-  // TODO(フェーズC): HealthKitから歩数を取得する
-  return undefined;
-}
-
 /** 1件目(必ず届く)固定ID */
 const WEIGHT_MANDATORY_ID = 100;
 /** 2件目以降(その日の体重が未入力なら届く)用に予約したID */

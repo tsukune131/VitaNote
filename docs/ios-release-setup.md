@@ -120,6 +120,19 @@ TestFlight アップロード、まで自動で走る。
   終わるまで数分〜数十分かかる
 - 生成された `.ipa` は Actions の Artifacts からもダウンロードできる
 
+## 7.5 App ID の Capability を変えたとき
+
+HealthKit のように App ID 側で有効化が必要な機能を足したときは、
+**Apple Developer で Capability をオンにしてから、プロファイルを作り直す**。
+作り直さないと、保存済みの古いプロファイルに新しい Capability が入っておらず
+`Provisioning profile ... doesn't include the com.apple.developer.healthkit entitlement`
+でビルドが失敗する。
+
+1. https://developer.apple.com/account/resources/identifiers/list
+2. `com.tsukune.vitanote` を開く → 該当の Capability(HealthKit など)にチェック → Save
+3. Actions → iOS TestFlight → Run workflow → lane **`refresh_profiles`** を実行
+4. そのあと lane `beta` でビルドする
+
 ## 8. 家族に配布する
 
 App Store Connect → TestFlight → **内部テスト** グループを作り、

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
+import { HealthSyncSettings } from '../components/HealthSyncSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { ProfileForm } from '../components/ProfileForm';
 import {
@@ -301,6 +302,8 @@ export function YouPage({ profile }: { profile: Profile }) {
           ))}
         </div>
       </div>
+
+      <HealthSyncSettings profile={profile} />
 
       <NotificationSettings profile={profile} />
 

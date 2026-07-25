@@ -18,6 +18,9 @@ export interface Profile {
   // (腹囲はメタボ基準の必須項目のため常時表示。トグルなし)
   trackBloodPressure?: boolean;
   trackGlucose?: boolean;
+  // ヘルスケア(HealthKit)連携。オンにすると歩数を自動取り込みし、
+  // 体重・体脂肪率をヘルスケアへ書き戻す(iOSのアプリ版のみ)
+  syncHealth?: boolean;
   // リマインダー通知の設定(発火自体はネイティブアプリ化後に実装。設定のみ先行)
   notifyWeight?: boolean;
   notifyWeightTimes?: string[]; // HH:mmの配列。デフォルト ['07:00', '20:00']

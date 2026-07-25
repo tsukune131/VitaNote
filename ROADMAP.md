@@ -164,6 +164,17 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
 - [ ] C-3 HealthKit連携(プラグイン: @capgo/capacitor-health)
       - 起動時に歩数を自動取り込み(時間帯別も)
       - 記録した体重・体脂肪率をヘルスケアへ書き戻し
+  - [x] 実装 (2026-07-25) — src/lib/health.ts にラッパー。「あなた」タブの
+        「ヘルスケア連携」トグル(profile.syncHealth)でオンにすると、起動時と
+        前面復帰のたびに直近7日ぶんの歩数を1時間バケットで取り込む。
+        今日はヘルスケアを正として毎回上書き、前日以前は記録の無い日だけ埋める
+        (手入力を消さないため)。体重保存時に体重・体脂肪率を書き戻す
+        (体脂肪率はHealthKitのpercentが0〜1の割合なので/100して渡す)
+  - [x] iOS側 (2026-07-25) — App.entitlements(com.apple.developer.healthkit)、
+        CODE_SIGN_ENTITLEMENTS、Info.plistにNSHealthShare/UpdateUsageDescription
+  - [ ] ユーザー作業: Apple DeveloperのApp IDでHealthKitをオンにする →
+        lane=refresh_profiles でプロファイル作り直し → lane=beta
+  - [ ] 実機確認: 歩数の取り込み・体重の書き戻し
 - [ ] C-4 ローカル通知(記録リマインダー)の実機有効化+ネイティブの細部
       (スプラッシュ・ステータスバー色・触覚フィードバック)
 - [ ] C-5 TestFlightで家族に配布、実機フィードバック反映
