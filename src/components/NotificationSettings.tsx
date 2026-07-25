@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   db,
   DEFAULT_WAIST_NOTIFY_WEEKDAY,
@@ -5,19 +6,38 @@ import {
   type Profile,
 } from '../db';
 import { WEEKDAY_LABELS } from '../lib/date';
+import { ensureNotificationPermission, MAX_WEIGHT_NOTIFY_TIMES } from '../lib/notifications';
+import { isNativeApp } from '../lib/platform';
 
 /**
- * リマインダー通知の設定(体重の時刻・腹囲の週次曜日)。
- * 実際の通知発火はネイティブアプリ化(フェーズC)後に対応する。
- * ここでは設定値の保存のみを行う(src/lib/platform.tsに発火用の関数を用意済み)。
+ * リマインダー通知の設定。
+ * 実際の予約はApp.tsxが設定値の変化を見て貼り直すので、ここは値の保存だけを行う。
+ * オンにするときだけ、その場でOSの許可を求める(断られたら画面で知らせる)。
  */
 export function NotificationSettings({ profile }: { profile: Profile }) {
+  const native = isNativeApp();
+  const [denied, setDenied] = useState(false);
   const weightOn = profile.notifyWeight ?? false;
   const weightTimes = profile.notifyWeightTimes ?? DEFAULT_WEIGHT_NOTIFY_TIMES;
   const waistOn = profile.notifyWaist ?? false;
   const waistWeekday = profile.notifyWaistWeekday ?? DEFAULT_WAIST_NOTIFY_WEEKDAY;
 
+  // 端末側で通知を切られていることがあるので、開くたびに確かめる
+  useEffect(() => {
+    if (!native || !(weightOn || waistOn)) return;
+    void ensureNotificationPermission().then((p) => setDenied(p === 'denied'));
+  }, [native, weightOn, waistOn]);
+
+  /** オンにするときはその場で許可を求め、断られたら設定は変えずに知らせる */
+  async function askIfEnabling(checked: boolean): Promise<boolean> {
+    if (!checked || !native) return true;
+    const permission = await ensureNotificationPermission();
+    setDenied(permission === 'denied');
+    return permission !== 'denied';
+  }
+
   async function toggleWeight(checked: boolean) {
+    if (!(await askIfEnabling(checked))) return;
     await db.profiles.update(profile.id, {
       notifyWeight: checked,
       notifyWeightTimes: profile.notifyWeightTimes ?? DEFAULT_WEIGHT_NOTIFY_TIMES,
@@ -41,6 +61,7 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
   }
 
   async function toggleWaist(checked: boolean) {
+    if (!(await askIfEnabling(checked))) return;
     await db.profiles.update(profile.id, {
       notifyWaist: checked,
       notifyWaistWeekday: profile.notifyWaistWeekday ?? DEFAULT_WAIST_NOTIFY_WEEKDAY,
@@ -50,9 +71,16 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
   return (
     <div className="card">
       <h2>リマインダー通知</h2>
-      <p className="muted" style={{ marginTop: 0 }}>
-        ここでは設定のみ行えます。実際に通知が届くのは、アプリ版(近日公開予定)からになります。
-      </p>
+      {!native && (
+        <p className="muted" style={{ marginTop: 0 }}>
+          ここでは設定のみ行えます。実際に通知が届くのはiPhoneのアプリ版からになります。
+        </p>
+      )}
+      {denied && (
+        <p className="muted" style={{ marginTop: 0 }}>
+          通知が許可されていません。iPhoneの「設定」→「通知」→「VitaNote」から許可してください。
+        </p>
+      )}
 
       <label className="checkbox-inline" style={{ marginBottom: 8 }}>
         <input
@@ -92,9 +120,11 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
               )}
             </div>
           ))}
-          <button className="secondary" onClick={() => void addWeightTime()}>
-            + 時刻を追加
-          </button>
+          {weightTimes.length < MAX_WEIGHT_NOTIFY_TIMES && (
+            <button className="secondary" onClick={() => void addWeightTime()}>
+              + 時刻を追加
+            </button>
+          )}
         </div>
       )}
 
@@ -124,6 +154,11 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
             ))}
           </select>
         </label>
+      )}
+      {waistOn && (
+        <p className="muted" style={{ marginBottom: 0 }}>
+          指定した曜日の朝9時にお知らせします。
+        </p>
       )}
     </div>
   );

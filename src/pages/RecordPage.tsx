@@ -38,7 +38,8 @@ import {
   weekdayOf,
 } from '../lib/date';
 import { isHealthSyncEnabled, writeBodyMetricsToHealth } from '../lib/health';
-import { cancelTodaysConditionalWeightReminders } from '../lib/platform';
+import { tapFeedback } from '../lib/nativeUi';
+import { cancelTodaysConditionalWeightReminders } from '../lib/notifications';
 import { tipForDate } from '../lib/tips';
 
 export function RecordPage({ profile }: { profile: Profile }) {
@@ -443,6 +444,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     const existing = medLogs?.find((l) => l.medicationId === medicationId && l.meal === meal);
     if (taken && !existing) {
       await db.medicationLogs.add({ profileId, date, medicationId, meal } as never);
+      void tapFeedback(); // 飲んだ印を付けた手応えを返す
     } else if (!taken && existing) {
       await db.medicationLogs.delete(existing.id);
     }
@@ -717,6 +719,7 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
   async function add(ml: number) {
     if (!(ml > 0)) return;
     await db.waterLogs.add({ profileId, date, time: nowTimeStr(), ml } as never);
+    void tapFeedback(); // ボタン一発で記録が増えるので、入った合図を返す
   }
 
   return (

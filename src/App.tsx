@@ -1,13 +1,20 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Profile } from './db';
+import {
+  db,
+  DEFAULT_WAIST_NOTIFY_WEEKDAY,
+  DEFAULT_WEIGHT_NOTIFY_TIMES,
+  type Profile,
+} from './db';
 import { Onboarding } from './components/Onboarding';
+import { todayStr } from './lib/date';
 import {
   importStepsFromHealth,
   isHealthSyncEnabled,
   isHealthSyncUnset,
   requestHealthAccess,
 } from './lib/health';
+import { cancelAllReminders, syncReminders } from './lib/notifications';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -83,6 +90,41 @@ export default function App() {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [syncHealth, askAccess, profileId, onboarding]);
+
+  // 通知は起動・前面復帰のたびに貼り直す。2件目以降の体重通知は繰り返しにできず
+  // 「当日ぶんの単発」を積む方式なので、開いたときに積み直す必要がある
+  const notifyWeight = profile?.notifyWeight ?? false;
+  const notifyWeightTimes = (profile?.notifyWeightTimes ?? DEFAULT_WEIGHT_NOTIFY_TIMES).join(',');
+  const notifyWaist = profile?.notifyWaist ?? false;
+  const notifyWaistWeekday = profile?.notifyWaistWeekday ?? DEFAULT_WAIST_NOTIFY_WEEKDAY;
+  useEffect(() => {
+    if (profileId === undefined || onboarding !== false) return;
+    if (!notifyWeight && !notifyWaist) {
+      void cancelAllReminders();
+      return;
+    }
+
+    const apply = async () => {
+      const today = todayStr();
+      const weighed = await db.weights.where('[profileId+date]').equals([profileId, today]).first();
+      await syncReminders(
+        {
+          weightEnabled: notifyWeight,
+          weightTimes: notifyWeightTimes.split(','),
+          waistEnabled: notifyWaist,
+          waistWeekday: notifyWaistWeekday,
+        },
+        weighed != null,
+      );
+    };
+    void apply();
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void apply();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [profileId, onboarding, notifyWeight, notifyWeightTimes, notifyWaist, notifyWaistWeekday]);
 
   if (profiles === undefined || onboarding === undefined) return null; // 読み込み中
 
