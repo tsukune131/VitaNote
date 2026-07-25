@@ -137,9 +137,24 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
 
 ## フェーズC: TestFlight配布(費用: 年99ドル)
 
-- [ ] C-1 Apple Developer Program登録(ユーザー作業・年99ドル。本人確認で1〜2日かかることあり)
+- [x] C-1 Apple Developer Program登録 (2026-07-25完了)
 - [ ] C-2 GitHub ActionsでiOSビルド+TestFlight自動アップロードのパイプライン構築
       (公開リポジトリのmacOSランナーは無料。証明書・プロビジョニングはfastlane管理)
+  - [x] CI側の実装 (2026-07-25) — .github/workflows/ios-testflight.yml(手動実行、
+        lane=beta/certificates を選択)、fastlane/{Appfile,Matchfile,Fastfile}、Gemfile。
+        `npm ci && npm run build && npx cap sync ios` → match で署名 → build_app →
+        upload_to_testflight。ビルド番号はTestFlightの最新+1(初回はActionsのrun number)
+  - [x] Bundle IDの不一致を解消 (2026-07-25) — Xcode側が旧 com.tsukune.weightnote の
+        ままだったため com.tsukune.vitanote に統一。Info.plistの表示名・
+        ios/App/App/capacitor.config.json も VitaNote に更新
+  - [x] 共有スキーム App.xcscheme を追加 (2026-07-25) — 未共有だとCIから
+        `-scheme App` でビルドできないため
+  - [ ] ユーザー作業: App ID作成 / App Store Connectにアプリ登録 /
+        App Store Connect APIキー(Admin権限)発行 / match用のプライベートリポジトリ作成 /
+        GitHub Secrets登録(ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64, APPLE_TEAM_ID,
+        MATCH_GIT_URL, MATCH_PASSWORD, MATCH_GIT_BASIC_AUTHORIZATION)
+        → 手順は docs/ios-release-setup.md に記載
+  - [ ] lane=certificates を1回実行して証明書を生成 → lane=beta で初回アップロード
 - [ ] C-3 HealthKit連携(プラグイン: @capgo/capacitor-health)
       - 起動時に歩数を自動取り込み(時間帯別も)
       - 記録した体重・体脂肪率をヘルスケアへ書き戻し
@@ -174,6 +189,10 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
 
 フェーズA・B完了(2026-07-19)。プロダクト方針・収益モデル・ビルド環境も決定済み(上記)。
 2026-07-20にアプリ名をVitaNoteへ変更(GitHubリポジトリ・PagesのURLも移行)。
-**次のアクション: C-1 Apple Developer登録(ユーザー作業)** → 登録完了後、C-2から実装再開。
+2026-07-25にC-1(Apple Developer登録)完了。フェーズC進行中。
+Bundle ID: **com.tsukune.vitanote**(2026-07-25確定)。
+**次のアクション: C-2のユーザー作業(App Store Connect登録・APIキー発行・Secrets登録)**
+→ 完了後、iOS TestFlightワークフローを lane=certificates → lane=beta の順に手動実行。
+その後 C-3(HealthKit)へ。
 アプリ: https://tsukune131.github.io/VitaNote/
 (Firebaseプロジェクト weightnote-923c3 は未使用のまま残置。再利用しないなら削除してよい)

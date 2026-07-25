@@ -36,3 +36,14 @@ ios/App/App/public
 ios/App/output
 ios/App/Pods
 ios/DerivedData
+
+# fastlane / iOS ビルド成果物
+build/
+*.ipa
+*.dSYM.zip
+*.mobileprovision
+*.p8
+fastlane/report.xml
+fastlane/README.md
+fastlane/test_output
+Gemfile.lock
