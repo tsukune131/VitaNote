@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Food, type MealItem, type MealSlot, type Profile } from '../db';
+import {
+  db,
+  MEDICATION_SLOT_LABELS,
+  MEDICATION_TIMING_LABELS,
+  type Food,
+  type MealItem,
+  type MealSlot,
+  type Profile,
+} from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
 import { type FoodPreset } from '../data/foodPresets';
 import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
@@ -636,7 +644,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
           {/* 服薬チェックは食事の記録とは別の作業なので、入力の流れを断たないよう末尾に置く */}
           {useMedication && medsForMeal.length > 0 && (
             <div className="medicine-box">
-              <div className="medicine-head">💊 {label}のお薬</div>
+              <div className="medicine-head">💊 {MEDICATION_SLOT_LABELS[key]}のお薬</div>
               {medsForMeal.map((m) => {
                 const taken =
                   medLogs?.some((l) => l.medicationId === m.id && l.meal === key) ?? false;
@@ -648,7 +656,9 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                       onChange={(e) => void toggleTaken(m.id, key, e.target.checked)}
                     />
                     {m.name}
-                    <span className="muted">({m.timing === 'before' ? '食前' : '食後'})</span>
+                    <span className="muted">
+                      ({MEDICATION_TIMING_LABELS[m.timing ?? 'after']})
+                    </span>
                   </label>
                 );
               })}

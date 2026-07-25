@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   db,
+  MEDICATION_SLOT_LABELS,
+  MEDICATION_TIMING_LABELS,
   type MealSlot,
   type Medication,
   type MedicationFrequency,
@@ -9,15 +11,15 @@ import {
 } from '../db';
 import { WEEKDAY_LABELS, todayStr } from '../lib/date';
 
-const MEALS: { key: MealSlot; label: string }[] = [
-  { key: 'breakfast', label: '朝食' },
-  { key: 'lunch', label: '昼食' },
-  { key: 'dinner', label: '夕食' },
-  { key: 'snack', label: '間食' },
-];
+const MEALS: { key: MealSlot; label: string }[] = (
+  ['breakfast', 'lunch', 'dinner', 'snack'] as const
+).map((key) => ({ key, label: MEDICATION_SLOT_LABELS[key] }));
+
+const TIMINGS: MedicationTiming[] = ['before', 'after', 'between'];
 
 const FREQUENCIES: { key: MedicationFrequency; label: string }[] = [
-  { key: 'meal', label: '食事ごと' },
+  // 就寝前も選べるようになったので「食事ごと」ではなく「毎日」と呼ぶ
+  { key: 'meal', label: '毎日' },
   { key: 'weekly', label: '週1回' },
   { key: 'monthly', label: '月1回' },
 ];
@@ -30,8 +32,8 @@ function describeMedication(m: Medication): string {
   if (freq === 'monthly') {
     return `月1回・${m.dayOfMonth ?? 1}日`;
   }
-  const mealLabel = (m.meals ?? []).map((mm) => MEALS.find((x) => x.key === mm)?.label).join('/');
-  return `${m.timing === 'before' ? '食前' : '食後'}・${mealLabel}`;
+  const mealLabel = (m.meals ?? []).map((mm) => MEDICATION_SLOT_LABELS[mm]).join('/');
+  return `${MEDICATION_TIMING_LABELS[m.timing ?? 'after']}・${mealLabel}`;
 }
 
 /** 薬の登録・編集・削除(1行=1種類)。日を跨いで引き継がれる薬マスタを管理する */
@@ -160,27 +162,17 @@ export function MedicationManager({ profileId }: { profileId: number }) {
           <div className="field">
             タイミング
             <div className="row" style={{ marginTop: 4 }}>
-              <label className="checkbox-inline">
-                <input
-                  type="radio"
-                  checked={timing === 'before'}
-                  onChange={() => setTiming('before')}
-                />
-                食前
-              </label>
-              <label className="checkbox-inline">
-                <input
-                  type="radio"
-                  checked={timing === 'after'}
-                  onChange={() => setTiming('after')}
-                />
-                食後
-              </label>
+              {TIMINGS.map((t) => (
+                <label className="checkbox-inline" key={t}>
+                  <input type="radio" checked={timing === t} onChange={() => setTiming(t)} />
+                  {MEDICATION_TIMING_LABELS[t]}
+                </label>
+              ))}
             </div>
           </div>
 
           <div className="field">
-            対象の食事
+            対象の時間帯
             <div className="row" style={{ marginTop: 4, flexWrap: 'wrap' }}>
               {MEALS.map((m) => (
                 <label className="checkbox-inline" key={m.key}>

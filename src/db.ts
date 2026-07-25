@@ -32,8 +32,26 @@ export const DEFAULT_WEIGHT_NOTIFY_TIMES = ['07:00', '20:00'];
 export const DEFAULT_WAIST_NOTIFY_WEEKDAY = 1;
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-export type MedicationTiming = 'before' | 'after';
-/** meal: 食事ごと(食前後) / weekly: 週1回(曜日指定) / monthly: 月1回(日にち指定) */
+export type MedicationTiming = 'before' | 'after' | 'between';
+
+export const MEDICATION_TIMING_LABELS: Record<MedicationTiming, string> = {
+  before: '食前',
+  after: '食後',
+  between: '食間',
+};
+
+/**
+ * 服薬の対象となる時間帯のラベル。
+ * 間食に紐づく薬はほぼ無いため、服薬の文脈では snack の枠を「就寝前」として扱う
+ * (食事の記録としては引き続き「間食」)。
+ */
+export const MEDICATION_SLOT_LABELS: Record<MealSlot, string> = {
+  breakfast: '朝食',
+  lunch: '昼食',
+  dinner: '夕食',
+  snack: '就寝前',
+};
+/** meal: 食事ごと(食前・食後・食間) / weekly: 週1回(曜日指定) / monthly: 月1回(日にち指定) */
 export type MedicationFrequency = 'meal' | 'weekly' | 'monthly';
 
 /** 薬の登録情報(日を跨いで引き継がれるマスタ) */
@@ -43,7 +61,7 @@ export interface Medication {
   name: string;
   /** 未設定の既存データは'meal'として扱う */
   frequency?: MedicationFrequency;
-  timing?: MedicationTiming; // 食前・食後(frequency='meal'のみ)
+  timing?: MedicationTiming; // 食前・食後・食間(frequency='meal'のみ)
   meals?: MealSlot[]; // 対象の食事(frequency='meal'のみ)
   weekday?: number; // 0(日)〜6(土)。frequency='weekly'のみ
   dayOfMonth?: number; // 1〜31。frequency='monthly'のみ
