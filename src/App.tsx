@@ -65,9 +65,11 @@ export default function App() {
 
     void (async () => {
       if (askAccess) {
-        await requestHealthAccess();
+        // 要求が失敗したときは未設定のままにして、次の起動でまた求める。
+        // ここでtrueを保存してしまうと、一度失敗しただけで二度と要求しなくなる
+        const asked = await requestHealthAccess();
         if (stopped) return;
-        await db.profiles.update(profileId, { syncHealth: true });
+        if (asked) await db.profiles.update(profileId, { syncHealth: true });
       }
       await sync();
     })();

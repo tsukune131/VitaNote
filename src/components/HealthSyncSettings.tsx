@@ -23,16 +23,12 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
     void checkHealthAvailability().then(setStatus);
   }, []);
 
-  async function toggle(checked: boolean) {
-    if (!checked) {
-      await db.profiles.update(profile.id, { syncHealth: false });
-      setMessage(undefined);
-      return;
-    }
-
+  /** 許可を求めてから取り込み、結果を出す。オンにしたときと「今すぐ取り込む」で共用 */
+  async function connectAndImport() {
     setBusy(true);
     try {
-      // 許可シートを出してから、その場で一度取り込んで結果を見せる
+      // 一度応答した項目についてOSは許可シートを出し直さないので、
+      // 出てこないときは端末の設定から直してもらう
       const asked = await requestHealthAccess();
       if (!asked) {
         setMessage('ヘルスケアに接続できませんでした。');
@@ -43,11 +39,20 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
       setMessage(
         days > 0
           ? `${days}日ぶんの歩数を取り込みました。`
-          : '歩数を取り込めませんでした。iPhoneの「設定」→「アプリ」→「ヘルスケア」でVitaNoteの歩数の読み取りが許可されているか確認してください。',
+          : '歩数を取り込めませんでした。iPhoneの「設定」→「プライバシーとセキュリティ」→「ヘルスケア」→「VitaNote」で、歩数の読み取りが許可されているか確認してください。',
       );
     } finally {
       setBusy(false);
     }
+  }
+
+  async function toggle(checked: boolean) {
+    if (!checked) {
+      await db.profiles.update(profile.id, { syncHealth: false });
+      setMessage(undefined);
+      return;
+    }
+    await connectAndImport();
   }
 
   return (
@@ -72,6 +77,16 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
             歩数を自動で取り込み(時間帯別も)、記録した体重・体脂肪率をヘルスケアへ書き戻します。
             歩数の転記が要らなくなります。
           </p>
+          {on && (
+            <button
+              className="secondary"
+              style={{ marginTop: 8 }}
+              disabled={busy}
+              onClick={() => void connectAndImport()}
+            >
+              今すぐ取り込む
+            </button>
+          )}
           {message && (
             <p className="muted" style={{ marginBottom: 0 }}>
               {message}
