@@ -157,6 +157,10 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
         MATCH_GIT_BASIC_AUTHORIZATION) → 手順は docs/ios-release-setup.md に記載
   - [x] lane=certificates で証明書生成 → lane=beta で初回アップロード成功 (2026-07-25)
   - [x] Node 20 廃止に伴い checkout/setup-node/upload-artifact を v7 に更新 (2026-07-25)
+  - [x] 実機で真っ白になる不具合を修正 (2026-07-25) — ワークフローが素の `npm run build`
+        を使っており、GitHub Pages用の `base: '/VitaNote/'` でビルドされていた。
+        WKWebViewからは全アセットが404になる。`npm run build:capacitor`
+        (`vite build --mode capacitor` = 相対パス+SWなし)に変更
 - [ ] C-3 HealthKit連携(プラグイン: @capgo/capacitor-health)
       - 起動時に歩数を自動取り込み(時間帯別も)
       - 記録した体重・体脂肪率をヘルスケアへ書き戻し
