@@ -51,6 +51,14 @@ export const MEDICATION_SLOT_LABELS: Record<MealSlot, string> = {
   dinner: '夕食',
   snack: '就寝前',
 };
+
+/**
+ * その時間帯で食前・食後・食間の指定が意味を持つか。
+ * 就寝前は食事ではないため、タイミングは尋ねず表示もしない。
+ */
+export function hasMealTiming(slot: MealSlot): boolean {
+  return slot !== 'snack';
+}
 /** meal: 食事ごと(食前・食後・食間) / weekly: 週1回(曜日指定) / monthly: 月1回(日にち指定) */
 export type MedicationFrequency = 'meal' | 'weekly' | 'monthly';
 

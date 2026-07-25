@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   db,
+  hasMealTiming,
   MEDICATION_SLOT_LABELS,
   MEDICATION_TIMING_LABELS,
   type Food,
@@ -656,9 +657,11 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                       onChange={(e) => void toggleTaken(m.id, key, e.target.checked)}
                     />
                     {m.name}
-                    <span className="muted">
-                      ({MEDICATION_TIMING_LABELS[m.timing ?? 'after']})
-                    </span>
+                    {hasMealTiming(key) && (
+                      <span className="muted">
+                        ({MEDICATION_TIMING_LABELS[m.timing ?? 'after']})
+                      </span>
+                    )}
                   </label>
                 );
               })}

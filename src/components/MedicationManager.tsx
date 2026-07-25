@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   db,
+  hasMealTiming,
   MEDICATION_SLOT_LABELS,
   MEDICATION_TIMING_LABELS,
   type MealSlot,
@@ -32,8 +33,11 @@ function describeMedication(m: Medication): string {
   if (freq === 'monthly') {
     return `月1回・${m.dayOfMonth ?? 1}日`;
   }
-  const mealLabel = (m.meals ?? []).map((mm) => MEDICATION_SLOT_LABELS[mm]).join('/');
-  return `${MEDICATION_TIMING_LABELS[m.timing ?? 'after']}・${mealLabel}`;
+  const slots = m.meals ?? [];
+  const slotLabel = slots.map((mm) => MEDICATION_SLOT_LABELS[mm]).join('/');
+  // 就寝前だけの薬に食前・食後は付かない
+  if (!slots.some(hasMealTiming)) return slotLabel;
+  return `${MEDICATION_TIMING_LABELS[m.timing ?? 'after']}・${slotLabel}`;
 }
 
 /** 薬の登録・編集・削除(1行=1種類)。日を跨いで引き継がれる薬マスタを管理する */
@@ -54,6 +58,9 @@ export function MedicationManager({ profileId }: { profileId: number }) {
   const [meals, setMeals] = useState<Set<MealSlot>>(new Set());
   const [weekday, setWeekday] = useState(0);
   const [dayOfMonth, setDayOfMonth] = useState(1);
+
+  // 就寝前だけの薬に食前・食後は無いので、その場合はタイミングを尋ねない
+  const needsTiming = meals.size === 0 || [...meals].some(hasMealTiming);
 
   function resetForm() {
     setEditingId(null);
@@ -160,18 +167,6 @@ export function MedicationManager({ profileId }: { profileId: number }) {
       {frequency === 'meal' && (
         <>
           <div className="field">
-            タイミング
-            <div className="row" style={{ marginTop: 4 }}>
-              {TIMINGS.map((t) => (
-                <label className="checkbox-inline" key={t}>
-                  <input type="radio" checked={timing === t} onChange={() => setTiming(t)} />
-                  {MEDICATION_TIMING_LABELS[t]}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="field">
             対象の時間帯
             <div className="row" style={{ marginTop: 4, flexWrap: 'wrap' }}>
               {MEALS.map((m) => (
@@ -186,6 +181,21 @@ export function MedicationManager({ profileId }: { profileId: number }) {
               ))}
             </div>
           </div>
+
+          {/* いつ飲むかを先に選んでもらい、食事に紐づく場合だけ食前・食後・食間を尋ねる */}
+          {needsTiming && (
+            <div className="field">
+              タイミング
+              <div className="row" style={{ marginTop: 4 }}>
+                {TIMINGS.map((t) => (
+                  <label className="checkbox-inline" key={t}>
+                    <input type="radio" checked={timing === t} onChange={() => setTiming(t)} />
+                    {MEDICATION_TIMING_LABELS[t]}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
