@@ -130,10 +130,11 @@ App Store Connect → TestFlight → **内部テスト** グループを作り�
 
 ## つまずきやすいところ
 
-- **輸出コンプライアンス**: 初回アップロード後に App Store Connect で聞かれる。
-  VitaNote は独自の暗号化を使っていないので「いいえ」で通る。
-  毎回聞かれるのが面倒なら Info.plist に
-  `ITSAppUsesNonExemptEncryption = false` を追加する。
+- **輸出コンプライアンス**: Info.plist に `ITSAppUsesNonExemptEncryption = false` を
+  入れてあるので、アップロードのたびに聞かれることはない(2026-07-25追加)。
+  VitaNote は暗号化コードを持たず、通信もせず、データは端末内に平文保存なので
+  この申告で正しい。**Sentry を有効化する(ワークフローに `VITE_SENTRY_DSN` を渡す)
+  など外部通信を足したら、HTTPS を使うことになるので申告し直しが必要。**
 - **証明書の作り直し**: 期限切れなどで作り直す場合は、`VitaNote-certificates` の
   中身を消してから lane=`certificates` を再実行する。
 - **Xcode バージョン**: ランナーの `latest-stable` を使っている。
