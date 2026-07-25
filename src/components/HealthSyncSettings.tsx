@@ -35,12 +35,17 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
         return;
       }
       await db.profiles.update(profile.id, { syncHealth: true });
-      const days = await importStepsFromHealth(profile.id);
-      setMessage(
-        days > 0
-          ? `${days}日ぶんの歩数を取り込みました。`
-          : '歩数を取り込めませんでした。iPhoneの「設定」→「プライバシーとセキュリティ」→「ヘルスケア」→「VitaNote」で、歩数の読み取りが許可されているか確認してください。',
-      );
+      const { ok, daysWithData, daysWritten } = await importStepsFromHealth(profile.id);
+      if (!ok || daysWithData === 0) {
+        setMessage(
+          '歩数を取り込めませんでした。iPhoneの「設定」→「プライバシーとセキュリティ」→「ヘルスケア」→「VitaNote」で、歩数の読み取りが許可されているか確認してください。',
+        );
+      } else if (daysWritten > 0) {
+        setMessage(`${daysWritten}日ぶんの歩数を取り込みました。`);
+      } else {
+        // 読めてはいるが、すでに同じ内容が入っている
+        setMessage(`歩数は最新の状態です(直近${daysWithData}日ぶん)。`);
+      }
     } finally {
       setBusy(false);
     }

@@ -95,14 +95,24 @@ export async function requestHealthAccess(): Promise<boolean> {
   }
 }
 
+export interface StepImportResult {
+  /** ヘルスケアに問い合わせできたか(未許可・エラーならfalse) */
+  ok: boolean;
+  /** ヘルスケアに歩数のあった日数。連携できているかはこれで判断する */
+  daysWithData: number;
+  /** 実際にこのアプリの記録を更新した日数。既に同じ値なら0のまま */
+  daysWritten: number;
+}
+
+const IMPORT_FAILED: StepImportResult = { ok: false, daysWithData: 0, daysWritten: 0 };
+
 /**
  * 直近IMPORT_DAYS日分の歩数をヘルスケアから取り込む。
  * 今日は毎回上書きする(ヘルスケアの値を正とする)が、前日以前は
  * 記録が無い日だけ埋める(手入力した過去の値を消さないため)。
- * 戻り値は書き込んだ日数。
  */
-export async function importStepsFromHealth(profileId: number): Promise<number> {
-  if (!isNativeApp()) return 0;
+export async function importStepsFromHealth(profileId: number): Promise<StepImportResult> {
+  if (!isNativeApp()) return IMPORT_FAILED;
 
   const today = todayStr();
   const start = addDays(today, -(IMPORT_DAYS - 1));
@@ -119,7 +129,7 @@ export async function importStepsFromHealth(profileId: number): Promise<number> 
     samples = result.samples;
   } catch {
     // 未許可・ヘルスケア無効など。連携なしの状態として黙って諦める
-    return 0;
+    return IMPORT_FAILED;
   }
 
   // 1時間ごとのバケットを、ローカルタイムの日付ごとの24要素配列にまとめる
@@ -132,10 +142,12 @@ export async function importStepsFromHealth(profileId: number): Promise<number> 
     byDate.set(date, hourly);
   }
 
-  let written = 0;
+  let daysWithData = 0;
+  let daysWritten = 0;
   for (const [date, hourly] of byDate) {
     const total = hourly.reduce((a, b) => a + b, 0);
     if (total <= 0) continue;
+    daysWithData++;
 
     const existing = await db.steps.where('[profileId+date]').equals([profileId, date]).first();
     if (existing) {
@@ -145,9 +157,9 @@ export async function importStepsFromHealth(profileId: number): Promise<number> 
     } else {
       await db.steps.add({ profileId, date, total, hourly } as never);
     }
-    written++;
+    daysWritten++;
   }
-  return written;
+  return { ok: true, daysWithData, daysWritten };
 }
 
 /**
