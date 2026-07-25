@@ -34,6 +34,19 @@ function plugin() {
   return Health;
 }
 
+/**
+ * ヘルスケア連携が有効か。未設定(まだ一度も切り替えていない)なら既定でオン。
+ * Web/PWAではプラグインが無いので常にオフ扱いにする。
+ */
+export function isHealthSyncEnabled(profile: { syncHealth?: boolean }): boolean {
+  return isNativeApp() && (profile.syncHealth ?? true);
+}
+
+/** まだ一度も許可を求めていない状態か(初回起動で自動的に許可を求めるため) */
+export function isHealthSyncUnset(profile: { syncHealth?: boolean }): boolean {
+  return isNativeApp() && profile.syncHealth === undefined;
+}
+
 export interface HealthAvailability {
   available: boolean;
   /** 使えないときの理由。実機でしか起きない失敗を画面から追えるようにするため表示する */

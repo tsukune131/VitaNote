@@ -29,7 +29,7 @@ import {
   todayStr,
   weekdayOf,
 } from '../lib/date';
-import { writeBodyMetricsToHealth } from '../lib/health';
+import { isHealthSyncEnabled, writeBodyMetricsToHealth } from '../lib/health';
 import { cancelTodaysConditionalWeightReminders } from '../lib/platform';
 import { tipForDate } from '../lib/tips';
 
@@ -121,7 +121,7 @@ function BodyMetricsSection({ profile, date }: { profile: Profile; date: string 
       const data = { kg: v, bodyFatPct: f > 0 ? f : undefined };
       if (weightEntry) await db.weights.update(weightEntry.id, data);
       else await db.weights.add({ profileId, date, ...data } as never);
-      if (profile.syncHealth) await writeBodyMetricsToHealth(date, v, data.bodyFatPct);
+      if (isHealthSyncEnabled(profile)) await writeBodyMetricsToHealth(date, v, data.bodyFatPct);
     }
 
     const waistData = { waist: w > 0 ? w : undefined };
@@ -794,14 +794,17 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
 
 function StepsSection({ profile, date }: { profile: Profile; date: string }) {
   const profileId = profile.id;
-  // 連携中の「今日」はアプリを開くたびヘルスケアの値で上書きされるので手入力させない。
-  // 過去日は取り込みが手入力を上書きしないため、そのまま編集できる
-  const managedByHealth = (profile.syncHealth ?? false) && date === todayStr();
   const entry = useEntry<{ id: number; total: number; hourly?: number[] }>(
     'steps',
     profileId,
     date,
   );
+  // 連携中の「今日」はアプリを開くたびヘルスケアの値で上書きされるので手入力させない。
+  // 過去日は取り込みが手入力を上書きしないため、そのまま編集できる。
+  // ただし取り込めていないうちは手入力を残す(ヘルスケアの許可を断った場合に
+  // 空の入力欄が編集できないまま残ってしまうため)
+  const managedByHealth =
+    isHealthSyncEnabled(profile) && date === todayStr() && (entry?.total ?? 0) > 0;
   const [total, setTotal] = useState('');
   const [hourly, setHourly] = useState<string[]>(Array(24).fill(''));
   const [showHourly, setShowHourly] = useState(false);

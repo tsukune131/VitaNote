@@ -2,7 +2,12 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from './db';
 import { Onboarding } from './components/Onboarding';
-import { importStepsFromHealth } from './lib/health';
+import {
+  importStepsFromHealth,
+  isHealthSyncEnabled,
+  isHealthSyncUnset,
+  requestHealthAccess,
+} from './lib/health';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
 
@@ -41,19 +46,39 @@ export default function App() {
   const activeId = activeIdSetting ? Number(activeIdSetting.value) : undefined;
   const profile: Profile | undefined = profiles?.find((p) => p.id === activeId) ?? profiles?.[0];
 
-  // ヘルスケア連携がオンなら、起動時と前面復帰のたびに歩数を取り込む
-  const syncHealth = profile?.syncHealth ?? false;
+  // ヘルスケア連携は既定でオン。起動時と前面復帰のたびに歩数を取り込む。
+  // まだ一度も設定していなければ、ここで許可を求めてからオンとして確定する
+  // (オンボーディング中は邪魔になるので、終わってから求める)
+  const syncHealth = profile ? isHealthSyncEnabled(profile) : false;
+  const askAccess = profile ? isHealthSyncUnset(profile) : false;
   const profileId = profile?.id;
   useEffect(() => {
-    if (!syncHealth || profileId === undefined) return;
-    const sync = () => void importStepsFromHealth(profileId);
-    sync();
+    if (!syncHealth || profileId === undefined || onboarding !== false) return;
+
+    let stopped = false;
+    const sync = async () => {
+      if (stopped) return;
+      await importStepsFromHealth(profileId);
+    };
+
+    void (async () => {
+      if (askAccess) {
+        await requestHealthAccess();
+        if (stopped) return;
+        await db.profiles.update(profileId, { syncHealth: true });
+      }
+      await sync();
+    })();
+
     const onVisible = () => {
-      if (document.visibilityState === 'visible') sync();
+      if (document.visibilityState === 'visible') void sync();
     };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [syncHealth, profileId]);
+    return () => {
+      stopped = true;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [syncHealth, askAccess, profileId, onboarding]);
 
   if (profiles === undefined || onboarding === undefined) return null; // 読み込み中
 

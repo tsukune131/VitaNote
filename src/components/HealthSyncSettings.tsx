@@ -16,7 +16,8 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
   const [status, setStatus] = useState<HealthAvailability | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | undefined>(undefined);
-  const on = profile.syncHealth ?? false;
+  // 既定でオン。オフにしたときだけfalseが入る
+  const on = profile.syncHealth ?? true;
 
   useEffect(() => {
     void checkHealthAvailability().then(setStatus);
