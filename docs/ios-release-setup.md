@@ -83,15 +83,34 @@ PowerShell での base64 化:
 
 ## 6. 証明書を作る(初回だけ)
 
-GitHub の **Actions** → **iOS TestFlight** → **Run workflow** →
-lane に **`certificates`** を選んで実行。
+手順1〜5がすべて終わっていることが前提。特に **App ID が未作成だと失敗する**
+(match はその App ID に対してプロファイルを作るため)。
 
-成功すると `VitaNote-certificates` リポジトリに暗号化された配布証明書と
-プロビジョニングプロファイルが保存される。
+1. https://github.com/tsukune131/VitaNote/actions を開く
+2. 左サイドバーのワークフロー一覧から **iOS TestFlight** をクリック
+3. 右側の **Run workflow** をクリック
+4. `Use workflow from` は **Branch: main** のまま
+5. `実行する fastlane レーン` を **`certificates`** に変更(既定は `beta` なので必ず変える)
+6. 緑の **Run workflow** を押す
+7. ページを再読み込みすると実行中の行が出る。クリックでログが見られる
+
+成功の確認:
+
+- 全ステップに緑のチェックが付く(5〜10分程度)
+- `VitaNote-certificates` リポジトリに `certs/` と `profiles/` ができている
+
+失敗したら `Run fastlane` ステップのログを開く:
+
+| エラー | 原因 |
+|---|---|
+| `Authentication credentials are missing or invalid` (401) | `ASC_KEY_ID` / `ASC_ISSUER_ID` / `.p8` の base64 のどれかが違う |
+| `Access forbidden` (403) | APIキーの権限が Admin でない |
+| `Couldn't find bundle identifier com.tsukune.vitanote` | 手順1の App ID が未作成、または `APPLE_TEAM_ID` が違う |
+| `Authentication failed` / `repository not found` (git) | `MATCH_GIT_URL` か `MATCH_GIT_BASIC_AUTHORIZATION` が違う。PATの権限が Contents: Read and write か確認 |
 
 ## 7. TestFlight にアップロードする
 
-同じワークフローを lane **`beta`** で実行。
+同じワークフローを、今度は lane **`beta`** で実行する(手順6と同じ操作)。
 
 `npm run build` → `npx cap sync ios` → match で署名 → アーカイブ →
 TestFlight アップロード、まで自動で走る。
