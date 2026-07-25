@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { db, type Profile } from '../db';
 import { HealthSyncSettings } from '../components/HealthSyncSettings';
+import { MedicationSettings } from '../components/MedicationSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { UsageGuide } from '../components/UsageGuide';
 
@@ -39,6 +40,8 @@ export function SettingsPage({ profile }: { profile: Profile }) {
           ))}
         </div>
       </div>
+
+      <MedicationSettings profile={profile} />
 
       <HealthSyncSettings profile={profile} />
 

@@ -6,7 +6,6 @@ import { type FoodPreset } from '../data/foodPresets';
 import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
 import { matchExercise, searchExercises } from '../lib/exerciseSearch';
 import { withItemAdded, withItemRemoved } from '../lib/mealItems';
-import { MedicationManager } from '../components/MedicationManager';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
 import {
@@ -417,8 +416,8 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
   }
 
   // 服薬管理
+  // 服薬を使うかどうかと薬の登録は「設定」タブ。ここは日々のチェックだけを扱う
   const useMedication = profile.useMedication ?? false;
-  const [showMedManager, setShowMedManager] = useState(false);
   const medications = useLiveQuery(
     async () => (useMedication ? db.medications.where('profileId').equals(profileId).toArray() : []),
     [profileId, useMedication],
@@ -430,11 +429,6 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
         : [],
     [profileId, date, useMedication],
   );
-
-  async function toggleUseMedication(checked: boolean) {
-    await db.profiles.update(profileId, { useMedication: checked });
-    if (!checked) setShowMedManager(false);
-  }
 
   async function toggleTaken(medicationId: number, meal: MealSlot | undefined, taken: boolean) {
     const existing = medLogs?.find((l) => l.medicationId === medicationId && l.meal === meal);
@@ -487,51 +481,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
 
   return (
     <div className="card">
-      <div className="card-head">
-        <h2>食事</h2>
-        <label className="checkbox-inline muted">
-          <input
-            type="checkbox"
-            checked={useMedication}
-            onChange={(e) => void toggleUseMedication(e.target.checked)}
-          />
-          💊 服薬も記録する
-        </label>
-      </div>
-      {useMedication && (
-        <>
-          <button
-            className={`ghost menu-toggle ${showMedManager ? 'active' : ''}`}
-            onClick={() => setShowMedManager((v) => !v)}
-          >
-            💊 薬を管理
-          </button>
-          {showMedManager && <MedicationManager profileId={profileId} />}
-        </>
-      )}
-      {useMedication && otherMedications.length > 0 && (
-        <div className="medicine-box">
-          <div className="muted" style={{ fontSize: 11 }}>
-            きょうのその他のお薬
-          </div>
-          {otherMedications.map((m) => {
-            const taken = medLogs?.some((l) => l.medicationId === m.id && l.meal == null) ?? false;
-            return (
-              <label className="checkbox-inline medicine-row" key={m.id}>
-                <input
-                  type="checkbox"
-                  checked={taken}
-                  onChange={(e) => void toggleTaken(m.id, undefined, e.target.checked)}
-                />
-                💊 {m.name}
-                <span className="muted">
-                  ({(m.frequency ?? 'meal') === 'weekly' ? '週1回' : '月1回'})
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      )}
+      <h2>食事</h2>
       {MEAL_FIELDS.map(([key, label]) => {
         const medsForMeal = mealMedications.filter((m) => (m.meals ?? []).includes(key));
         return (
@@ -572,25 +522,6 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                   </button>
                 </span>
               ))}
-            </div>
-          )}
-          {useMedication && medsForMeal.length > 0 && (
-            <div className="medicine-box">
-              {medsForMeal.map((m) => {
-                const taken =
-                  medLogs?.some((l) => l.medicationId === m.id && l.meal === key) ?? false;
-                return (
-                  <label className="checkbox-inline medicine-row" key={m.id}>
-                    <input
-                      type="checkbox"
-                      checked={taken}
-                      onChange={(e) => void toggleTaken(m.id, key, e.target.checked)}
-                    />
-                    💊 {m.name}
-                    <span className="muted">({m.timing === 'before' ? '食前' : '食後'})</span>
-                  </label>
-                );
-              })}
             </div>
           )}
           <button
@@ -702,9 +633,51 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
               </div>
             </div>
           )}
+          {/* 服薬チェックは食事の記録とは別の作業なので、入力の流れを断たないよう末尾に置く */}
+          {useMedication && medsForMeal.length > 0 && (
+            <div className="medicine-box">
+              <div className="medicine-head">💊 {label}のお薬</div>
+              {medsForMeal.map((m) => {
+                const taken =
+                  medLogs?.some((l) => l.medicationId === m.id && l.meal === key) ?? false;
+                return (
+                  <label className="checkbox-inline medicine-row" key={m.id}>
+                    <input
+                      type="checkbox"
+                      checked={taken}
+                      onChange={(e) => void toggleTaken(m.id, key, e.target.checked)}
+                    />
+                    {m.name}
+                    <span className="muted">({m.timing === 'before' ? '食前' : '食後'})</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
         );
       })}
+      {useMedication && otherMedications.length > 0 && (
+        <div className="medicine-box">
+          <div className="medicine-head">💊 きょうのその他のお薬</div>
+          {otherMedications.map((m) => {
+            const taken = medLogs?.some((l) => l.medicationId === m.id && l.meal == null) ?? false;
+            return (
+              <label className="checkbox-inline medicine-row" key={m.id}>
+                <input
+                  type="checkbox"
+                  checked={taken}
+                  onChange={(e) => void toggleTaken(m.id, undefined, e.target.checked)}
+                />
+                {m.name}
+                <span className="muted">
+                  ({(m.frequency ?? 'meal') === 'weekly' ? '週1回' : '月1回'})
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
       <div className="row" style={{ alignItems: 'center' }}>
         <div className="muted">合計 {total.toLocaleString()} kcal</div>
         <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />

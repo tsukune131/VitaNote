@@ -562,6 +562,12 @@ button:disabled {
   gap: 6px;
 }
 
+/* 食事の記録とは別の作業だと分かるよう、何のお薬かを見出しで示す */
+.medicine-head {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .medicine-row {
   font-size: 14px;
 }
