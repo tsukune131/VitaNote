@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { db, setActiveProfileId } from '../db';
+import { isNativeApp } from '../lib/platform';
 import { ProfileForm } from './ProfileForm';
 
 type Step = 'welcome' | 'profile' | 'goal' | 'guide';
@@ -7,6 +8,8 @@ type Step = 'welcome' | 'profile' | 'goal' | 'guide';
 const STEPS: Step[] = ['welcome', 'profile', 'goal', 'guide'];
 
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
+  // ヘルスケア連携はiOSのアプリ版だけの機能なので、Web/PWAでは案内しない
+  const native = isNativeApp();
   const [step, setStep] = useState<Step>('welcome');
   const [profileId, setProfileId] = useState<number | null>(null);
   const [targetWeight, setTargetWeight] = useState('');
@@ -42,13 +45,16 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         <div className="card">
           <h2>ようこそ 👋</h2>
           <p className="muted">
-            体重・食事・飲水・歩数を毎日記録して、目標体重の達成までを見える化するアプリです。
-            記録データはこの端末の中だけに保存され、外部には送信されません。
+            体重とお薬を1冊にまとめる、手帳のような記録アプリです。
+            記録は端末の中だけに保存されます。アカウント登録も広告もなく、
+            データが外部に送信されることはありません。
           </p>
           <ul className="onboarding-list">
-            <li>体重・体脂肪率を記録</li>
-            <li>食事のカロリーと時刻を記録</li>
+            <li>体重・体脂肪率・腹囲を記録</li>
+            <li>食事のカロリーと時刻、飲水を記録</li>
             <li>歩数・運動の消費カロリーを記録</li>
+            <li>お薬の飲み忘れをチェック</li>
+            <li>血圧・血糖値、健康診断の血液検査も記録</li>
             <li>推移をグラフでふりかえり</li>
           </ul>
           <button onClick={() => setStep('profile')}>はじめる</button>
@@ -74,7 +80,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         <div className="card">
           <h2>あなたについて教えてください</h2>
           <p className="muted">
-            身長・生年月日・活動レベルから、1日の推定消費カロリーを計算します。
+            身長・生年月日・性別・活動レベルから、1日の推定消費カロリーを計算します。
+            この計算をもとに「きょうの処方箋」が、目標までに必要な歩数やご飯の量を教えてくれます。
           </p>
           <ProfileForm
             onSaved={async (id) => {
@@ -89,7 +96,9 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       {step === 'goal' && (
         <div className="card">
           <h2>目標を設定しましょう</h2>
-          <p className="muted">あとから「あなた」タブでいつでも変更できます。</p>
+          <p className="muted">
+            あとから「あなた」タブでいつでも変更できます。目標腹囲もそちらで設定できます。
+          </p>
           <div className="row">
             <label className="field">
               目標体重(kg)
@@ -138,13 +147,19 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           <div className="onboarding-guide-item">
             <span className="tab-name">あなた</span>
             <div>
-              <p className="muted">プロフィールと目標、必要な1日消費カロリーを確認します。</p>
+              <p className="muted">
+                プロフィールと目標、必要な1日消費カロリーを確認します。
+                健康診断の血液検査もここに記録します。
+              </p>
             </div>
           </div>
           <div className="onboarding-guide-item">
             <span className="tab-name">きょう</span>
             <div>
-              <p className="muted">毎日ここで体重・食事・飲水・歩数を書き込みます。</p>
+              <p className="muted">
+                毎日ここに書き込みます。体重・体脂肪率・腹囲、食事、飲水、歩数、運動、
+                お薬のチェック、日記まで1ページにまとまっています。
+              </p>
             </div>
           </div>
           <div className="onboarding-guide-item">
@@ -153,6 +168,36 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
               <p className="muted">グラフで体重やカロリー貯金の推移を確認します。</p>
             </div>
           </div>
+          <div className="onboarding-guide-item">
+            <span className="tab-name">設定</span>
+            <div>
+              <p className="muted">
+                お薬や血圧・血糖値の記録を使うかどうか、リマインダー通知
+                {native && '、ヘルスケア連携'}をここで切り替えます。
+              </p>
+            </div>
+          </div>
+
+          {native && (
+            <>
+              <h3>ヘルスケア連携について</h3>
+              <ul className="onboarding-list">
+                <li>このあと、ヘルスケアへのアクセスを確認する画面が出ます</li>
+                <li>歩数は自動で取り込まれるので、書き写す必要はありません</li>
+                <li>記録した体重・体脂肪率はヘルスケアにも書き戻されます</li>
+                <li>連携中、その日の歩数は手入力できません(ヘルスケアの値を使います)</li>
+                <li>連携が不要なら「設定」タブでオフにできます</li>
+              </ul>
+            </>
+          )}
+
+          <h3>記録の保存について</h3>
+          <p className="muted">
+            記録はこの端末の中だけに保存されます。安全な代わりに、
+            <strong>アプリを削除すると記録も消えます</strong>。
+            機種変更のときもデータは引き継がれませんのでご注意ください。
+          </p>
+
           <button onClick={onComplete}>はじめる</button>
         </div>
       )}

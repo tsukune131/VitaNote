@@ -73,7 +73,9 @@ body {
 #root {
   max-width: 640px;
   margin: 0 auto;
-  padding: 0 12px calc(72px + env(safe-area-inset-bottom));
+  /* viewport-fit=cover でステータスバーの下まで描画されるので、
+     上端を空けないと時刻やWi-Fiのアイコンにロゴが重なる */
+  padding: env(safe-area-inset-top) 12px calc(72px + env(safe-area-inset-bottom));
 }
 
 .app-header {
