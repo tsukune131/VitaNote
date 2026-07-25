@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
+import { LegalLink } from '../components/LegalLink';
 import { ProfileForm } from '../components/ProfileForm';
 import {
   ACTIVITY_LEVELS,
@@ -274,13 +275,9 @@ export function YouPage({ profile }: { profile: Profile }) {
       <BloodTestManager profileId={profile.id} />
 
       <p className="legal-links">
-        <a href={`${import.meta.env.BASE_URL}legal/privacy.html`} target="_blank" rel="noreferrer">
-          プライバシーポリシー
-        </a>
+        <LegalLink doc="privacy" />
         ・
-        <a href={`${import.meta.env.BASE_URL}legal/terms.html`} target="_blank" rel="noreferrer">
-          利用規約
-        </a>
+        <LegalLink doc="terms" />
       </p>
     </div>
   );

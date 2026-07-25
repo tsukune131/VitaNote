@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { db, setActiveProfileId } from '../db';
+import { LegalLink } from './LegalLink';
 import { ProfileForm } from './ProfileForm';
 import { UsageGuide } from './UsageGuide';
 
@@ -58,17 +59,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           <button onClick={() => setStep('profile')}>はじめる</button>
           <p className="muted" style={{ marginBottom: 0 }}>
             はじめると
-            <a href={`${import.meta.env.BASE_URL}legal/terms.html`} target="_blank" rel="noreferrer">
-              利用規約
-            </a>
-            と
-            <a
-              href={`${import.meta.env.BASE_URL}legal/privacy.html`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              プライバシーポリシー
-            </a>
+            <LegalLink doc="terms" />と<LegalLink doc="privacy" />
             に同意したものとみなされます。
           </p>
         </div>

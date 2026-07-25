@@ -947,8 +947,73 @@ button:disabled {
   padding: 4px 0 8px;
 }
 
-.legal-links a {
+.legal-links a,
+.legal-links .linklike {
   color: var(--muted);
+  font-size: 11px;
+}
+
+/* リンクに見えるボタン(アプリ内シートを開くため、aではなくbuttonを使う箇所) */
+.linklike {
+  display: inline;
+  width: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---- アプリ内シート(法務文書の表示) ---- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--card);
+  width: 100%;
+  max-width: 640px;
+  height: 88%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.modal-head button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.modal-frame {
+  flex: 1;
+  border: 0;
+  width: 100%;
 }
 
 .empty-note {
