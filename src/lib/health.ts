@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Health } from '@capgo/capacitor-health';
 import { db } from '../db';
 import { addDays, toDateStr, todayStr } from './date';
 import { isNativeApp } from './platform';
@@ -8,7 +9,9 @@ import { isNativeApp } from './platform';
  * 歩数は読み取り、体重・体脂肪率は書き戻す。iOSのネイティブアプリのときだけ動き、
  * PWA/Webでは何もしない(呼び出し側は連携なしの状態としてそのまま動く)。
  *
- * プラグインはネイティブでしか使わないので、Webのバンドルに載らないよう動的に読み込む。
+ * プラグインは静的に読み込む。動的import(遅延読み込み)にすると実機のWKWebViewで
+ * チャンクの取得が返ってこず、連携がまるごと動かなくなる事象があった。
+ * プラグインのJSは数KBしかないので、遅延させる利点よりも確実さを取る。
  */
 
 /** 読み取る種別 */
@@ -22,18 +25,13 @@ const IMPORT_DAYS = 7;
 /** Capacitorに登録されるプラグイン名(プラグイン側のjsName) */
 const PLUGIN_NAME = 'Health';
 
-async function plugin() {
+function plugin() {
   // ネイティブに登録されていないプラグインを呼ぶと、Capacitorは応答を返さず
   // Promiseが永久に解決しない。先に登録の有無を確かめて、待たずに失敗させる
   if (!Capacitor.isPluginAvailable(PLUGIN_NAME)) {
     throw new Error('プラグインがネイティブに登録されていません');
   }
-  try {
-    const { Health } = await import('@capgo/capacitor-health');
-    return Health;
-  } catch (e) {
-    throw new Error(`プラグインの読み込みに失敗しました: ${e instanceof Error ? e.message : e}`);
-  }
+  return Health;
 }
 
 export interface HealthAvailability {
@@ -52,12 +50,12 @@ export async function checkHealthAvailability(): Promise<HealthAvailability> {
   try {
     const timeout = new Promise<HealthAvailability>((resolve) =>
       setTimeout(
-        () => resolve({ available: false, reason: 'プラグインの読み込みが終わりません' }),
+        () => resolve({ available: false, reason: 'ヘルスケアの応答がありません' }),
         5000,
       ),
     );
     const check = (async (): Promise<HealthAvailability> => {
-      const { available, reason } = await (await plugin()).isAvailable();
+      const { available, reason } = await plugin().isAvailable();
       return { available, reason };
     })();
     return await Promise.race([check, timeout]);
@@ -74,7 +72,7 @@ export async function checkHealthAvailability(): Promise<HealthAvailability> {
 export async function requestHealthAccess(): Promise<boolean> {
   if (!(await checkHealthAvailability()).available) return false;
   try {
-    await (await plugin()).requestAuthorization({
+    await plugin().requestAuthorization({
       read: [...READ_TYPES],
       write: [...WRITE_TYPES],
     });
@@ -98,7 +96,7 @@ export async function importStepsFromHealth(profileId: number): Promise<number> 
 
   let samples;
   try {
-    const result = await (await plugin()).queryAggregated({
+    const result = await plugin().queryAggregated({
       dataType: 'steps',
       startDate: new Date(`${start}T00:00:00`).toISOString(),
       endDate: new Date(`${addDays(today, 1)}T00:00:00`).toISOString(),
@@ -155,11 +153,11 @@ export async function writeBodyMetricsToHealth(
   const startDate = at.toISOString();
 
   try {
-    const Health = await plugin();
-    await Health.saveSample({ dataType: 'weight', value: kg, startDate });
+    const health = plugin();
+    await health.saveSample({ dataType: 'weight', value: kg, startDate });
     if (bodyFatPct != null && bodyFatPct > 0) {
       // HealthKitのpercentは0〜1の割合。22.5%は0.225として渡す
-      await Health.saveSample({ dataType: 'bodyFat', value: bodyFatPct / 100, startDate });
+      await health.saveSample({ dataType: 'bodyFat', value: bodyFatPct / 100, startDate });
     }
   } catch {
     // 未許可など。アプリ内の記録は済んでいるので何もしない

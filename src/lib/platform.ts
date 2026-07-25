@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 /** Capacitorのネイティブアプリとして動いているか(WebやPWAならfalse) */
 export function isNativeApp(): boolean {
@@ -26,7 +27,6 @@ const WAIST_NOTIFICATION_ID = 200;
  */
 export async function scheduleWeightReminders(times: string[]): Promise<boolean> {
   if (!isNativeApp() || times.length === 0) return false;
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return false;
   await LocalNotifications.cancel({ notifications: ALL_WEIGHT_IDS });
@@ -48,7 +48,6 @@ export async function scheduleWeightReminders(times: string[]): Promise<boolean>
 /** 体重リマインダーを解除する(1件目・2件目以降とも) */
 export async function cancelWeightReminders(): Promise<void> {
   if (!isNativeApp()) return;
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
   await LocalNotifications.cancel({ notifications: ALL_WEIGHT_IDS });
 }
 
@@ -59,7 +58,6 @@ export async function cancelWeightReminders(): Promise<void> {
  */
 export async function cancelTodaysConditionalWeightReminders(): Promise<void> {
   if (!isNativeApp()) return;
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
   await LocalNotifications.cancel({ notifications: WEIGHT_CONDITIONAL_IDS });
 }
 
@@ -70,7 +68,6 @@ export async function cancelTodaysConditionalWeightReminders(): Promise<void> {
  */
 export async function scheduleWaistReminder(weekday: number): Promise<boolean> {
   if (!isNativeApp()) return false;
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return false;
   await LocalNotifications.schedule({
@@ -89,6 +86,5 @@ export async function scheduleWaistReminder(weekday: number): Promise<boolean> {
 /** 腹囲リマインダーを解除する */
 export async function cancelWaistReminder(): Promise<void> {
   if (!isNativeApp()) return;
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
   await LocalNotifications.cancel({ notifications: [{ id: WAIST_NOTIFICATION_ID }] });
 }

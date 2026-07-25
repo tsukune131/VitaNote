@@ -174,7 +174,15 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
         CODE_SIGN_ENTITLEMENTS、Info.plistにNSHealthShare/UpdateUsageDescription
   - [ ] ユーザー作業: Apple DeveloperのApp IDでHealthKitをオンにする →
         lane=refresh_profiles でプロファイル作り直し → lane=beta
+  - [x] 実機で連携が動かない問題を修正 (2026-07-25) — Capacitorプラグインを
+        動的import(遅延読み込み)していたところ、実機のWKWebViewでチャンクの取得が
+        返ってこず、連携がまるごと無反応になっていた。静的importに変更。
+        あわせて@capacitor/local-notificationsも静的importにした。
+        **教訓: Capacitorプラグインは遅延読み込みしない**
   - [ ] 実機確認: 歩数の取り込み・体重の書き戻し
+  - [ ] 要確認: 「ふりかえり」タブ(React.lazyの動的import)が実機で開けるか。
+        開けないなら遅延読み込みの仕組み自体が実機で動いていないことになり、
+        A-4のバンドル分割を見直す必要がある
 - [ ] C-4 ローカル通知(記録リマインダー)の実機有効化+ネイティブの細部
       (スプラッシュ・ステータスバー色・触覚フィードバック)
 - [ ] C-5 TestFlightで家族に配布、実機フィードバック反映
