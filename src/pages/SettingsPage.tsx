@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { db, type Profile } from '../db';
 import { HealthSyncSettings } from '../components/HealthSyncSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
+import { UsageGuide } from '../components/UsageGuide';
 
 /** 記録そのものではなく、アプリの振る舞いを決める設定をまとめたタブ */
 export function SettingsPage({ profile }: { profile: Profile }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div>
       <div className="card">
@@ -39,6 +43,22 @@ export function SettingsPage({ profile }: { profile: Profile }) {
       <HealthSyncSettings profile={profile} />
 
       <NotificationSettings profile={profile} />
+
+      <div className="card">
+        <h2>使い方</h2>
+        {open ? (
+          <>
+            <UsageGuide />
+            <button className="ghost" onClick={() => setOpen(false)}>
+              ▲ 閉じる
+            </button>
+          </>
+        ) : (
+          <button className="ghost" onClick={() => setOpen(true)}>
+            ▼ 各タブの使い方を読む
+          </button>
+        )}
+      </div>
     </div>
   );
 }
