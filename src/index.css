@@ -301,8 +301,10 @@ button:disabled {
   max-width: 200px;
   background: transparent;
   color: var(--muted);
-  font-size: 13px;
-  padding: 12px 4px 10px;
+  /* 4タブ入るので、狭い端末で「ふりかえり」が折り返さないよう詰める */
+  font-size: 12px;
+  white-space: nowrap;
+  padding: 12px 2px 10px;
   border-radius: 0;
   border-top: 2px solid transparent;
   margin-top: -5px;

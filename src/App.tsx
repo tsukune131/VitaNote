@@ -10,16 +10,18 @@ import {
 } from './lib/health';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 // Rechartsを使う推移画面はバンドルの大部分を占めるため、選んだ時だけ読み込む
 const TrendsPage = lazy(() => import('./pages/TrendsPage').then((m) => ({ default: m.TrendsPage })));
 
-type Tab = 'you' | 'record' | 'trends';
+type Tab = 'you' | 'record' | 'trends' | 'settings';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'you', label: 'あなた' },
   { key: 'record', label: 'きょう' },
   { key: 'trends', label: 'ふりかえり' },
+  { key: 'settings', label: '設定' },
 ];
 
 export default function App() {
@@ -101,6 +103,7 @@ export default function App() {
           <TrendsPage profile={profile} />
         </Suspense>
       )}
+      {tab === 'settings' && <SettingsPage profile={profile} />}
 
       <nav className="tabbar">
         {TABS.map((t) => (
