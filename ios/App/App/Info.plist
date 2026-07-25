@@ -4,8 +4,14 @@
 <dict>
     <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
+	<!-- 日本語アプリとして宣言する。これが無いとOSが英語アプリとみなし、
+	     日付入力のカレンダーなどOSが描画するUIが英語になる -->
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>ja</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ja</string>
+	</array>
 	<key>CFBundleDisplayName</key>
         <string>VitaNote</string>
 	<key>CFBundleExecutable</key>
