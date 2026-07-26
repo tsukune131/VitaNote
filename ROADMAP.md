@@ -154,7 +154,8 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
         App Store Connect APIキー(Admin権限)発行 / match用のプライベートリポジトリ
         VitaNote-certificates 作成 / GitHub Secrets登録(ASC_KEY_ID, ASC_ISSUER_ID,
         ASC_KEY_P8_BASE64, APPLE_TEAM_ID, MATCH_GIT_URL, MATCH_PASSWORD,
-        MATCH_GIT_BASIC_AUTHORIZATION) → 手順は docs/ios-release-setup.md に記載
+        MATCH_GIT_BASIC_AUTHORIZATION)
+        → 手順は docs/ios-release-setup.md(手元のみ・リポジトリには入れない)
   - [x] lane=certificates で証明書生成 → lane=beta で初回アップロード成功 (2026-07-25)
   - [x] Node 20 廃止に伴い checkout/setup-node/upload-artifact を v7 に更新 (2026-07-25)
   - [x] 実機で真っ白になる不具合を修正 (2026-07-25) — ワークフローが素の `npm run build`
@@ -220,7 +221,7 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
   - [ ] 前提(ユーザー作業): 有料App契約・銀行口座・税務情報の登録。
         契約が「有効」にならないとIAPアイテムを提出できない。
         反映に数日かかることがあるので先に着手してよい。
-        手順は docs/appstore-paid-setup.md に記載。
+        手順は docs/appstore-paid-setup.md(手元のみ・リポジトリには入れない)。
         あわせて要確認: App Store上の販売者名(個人アカウントは本名)、
         勤務先の副業規定
 - [ ] D-1 ストア素材(スクリーンショット、説明文、キーワード)
