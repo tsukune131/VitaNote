@@ -728,21 +728,52 @@ button:disabled {
   border-top: 1px solid var(--border);
 }
 
-.food-results button {
+.food-results li {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  width: 100%;
+  align-items: stretch;
+}
+
+.food-results button {
   background: transparent;
   color: var(--text);
   border-radius: 0;
+  font-size: 14px;
+}
+
+.food-results .food-add {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
   text-align: left;
   padding: 9px 12px;
-  font-size: 14px;
 }
 
 .food-results button:hover {
   background: var(--card);
+}
+
+/* マイメニューへの登録は明示操作。押していない物は薄い☆のまま残す */
+.food-star {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--muted);
+  border-left: 1px solid var(--border);
+}
+
+.food-star.on {
+  color: #e0a800;
+}
+
+.food-added {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--success);
 }
 
 .food-name {

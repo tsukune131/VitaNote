@@ -380,6 +380,10 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
   const [query, setQuery] = useState('');
   const [portion, setPortion] = useState(1);
   const results = useMemo(() => searchFoods(query), [query]);
+  // 検索結果に「マイメニュー登録済み」の★を出すための名前セット
+  const savedNames = useMemo(() => new Set((foods ?? []).map((f) => f.name)), [foods]);
+  // 追加した手応えを返すための一時表示(検索語は消さず、続けて追加・★を押せるようにする)
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   /** メニューを内訳に足し、そのぶん合計kcalを増やす。時刻が未入力なら現在時刻を入れる */
   function addItem(key: string, item: MealItem) {
@@ -400,21 +404,33 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     await db.foods.update(food.id, { uses: food.uses + 1 });
   }
 
+  function findFood(name: string) {
+    return db.foods
+      .where('profileId')
+      .equals(profileId)
+      .filter((f) => f.name === name)
+      .first();
+  }
+
   /**
-   * 同梱テーブルから選んだぶんを加算し、マイメニューにも覚えさせる。
-   * 次回は検索せずチップから選べるようにするのが狙い。
-   * 保存するのは倍率をかける前の基準kcal(量は毎回選び直せる)。
+   * 同梱テーブルから選んだぶんを加算する。
+   * マイメニューへの登録は★の明示操作だけで行う(検索で食べた物が勝手に増えないように)。
+   * 登録済みの物だけ使用回数を進めて、チップの「よく使う順」に反映する。
    */
   async function applyPreset(key: string, preset: FoodPreset) {
     addItem(key, { name: preset.name, kcal: applyPortion(preset.kcal, portion) });
-    const existing = await db.foods
-      .where('profileId')
-      .equals(profileId)
-      .filter((f) => f.name === preset.name)
-      .first();
+    setJustAdded(preset.name);
+    window.setTimeout(() => setJustAdded((cur) => (cur === preset.name ? null : cur)), 1500);
+    const existing = await findFood(preset.name);
     if (existing) await db.foods.update(existing.id, { uses: existing.uses + 1 });
-    else await db.foods.add({ profileId, name: preset.name, kcal: preset.kcal, uses: 1 } as never);
-    setQuery('');
+  }
+
+  /** ★でマイメニューへの登録・解除。保存するのは倍率をかける前の基準kcal */
+  async function toggleSaved(preset: FoodPreset) {
+    const existing = await findFood(preset.name);
+    if (existing) await db.foods.delete(existing.id);
+    else await db.foods.add({ profileId, name: preset.name, kcal: preset.kcal, uses: 0 } as never);
+    void tapFeedback();
   }
 
   async function addFood() {
@@ -572,21 +588,40 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                     </p>
                   ) : (
                     <ul className="food-results">
-                      {results.map((f) => (
+                      {results.map((f) => {
+                        const saved = savedNames.has(f.name);
+                        return (
                         <li key={f.name}>
-                          <button onClick={() => void applyPreset(key, f)}>
+                          <button className="food-add" onClick={() => void applyPreset(key, f)}>
                             <span className="food-name">{f.name}</span>
                             <span className="muted food-unit">{f.unit}</span>
-                            <span className="food-kcal">
-                              約{applyPortion(f.kcal, portion)}kcal
-                            </span>
+                            {justAdded === f.name ? (
+                              <span className="food-added">✓ 追加しました</span>
+                            ) : (
+                              <span className="food-kcal">
+                                約{applyPortion(f.kcal, portion)}kcal
+                              </span>
+                            )}
+                          </button>
+                          <button
+                            className={`food-star ${saved ? 'on' : ''}`}
+                            aria-pressed={saved}
+                            aria-label={
+                              saved ? `${f.name}をマイメニューから外す` : `${f.name}をマイメニューに登録`
+                            }
+                            onClick={() => void toggleSaved(f)}
+                          >
+                            {saved ? '★' : '☆'}
                           </button>
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                   )}
                   <p className="muted food-note">
                     カロリーは一般的な目安です。店やレシピで変わります。
+                    <br />
+                    ☆を押すとマイメニューに登録され、次回から検索なしで選べます。
                   </p>
                 </>
               )}
