@@ -427,6 +427,17 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     setValues((v) => ({ ...v, [key]: next.kcal ? String(next.kcal) : '' }));
   }
 
+  /**
+   * 手動パネルの開閉。
+   * 開くときは時刻を現在時刻に入れ直す。あとから手で足すぶんは
+   * 「いま食べた物」なので、最初の1品を入れた時刻が残っていても意味がない。
+   */
+  function toggleManual(key: string) {
+    const opening = manualFor !== key;
+    setManualFor(opening ? key : null);
+    if (opening) setTimes((t) => ({ ...t, [key]: nowTimeStr() }));
+  }
+
   /** 内訳に載っていないぶんを合計から差し引く。内訳は触らない */
   function dropUntracked(key: string, kcal: number) {
     const rest = (Number(values[key]) || 0) - kcal;
@@ -689,7 +700,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
           {/* 手動のkcal・時刻とオリジナルメニュー登録は補助。畳んでおいて必要なときだけ開く */}
           <button
             className={`ghost menu-toggle ${manualFor === key ? 'active' : ''}`}
-            onClick={() => setManualFor((cur) => (cur === key ? null : key))}
+            onClick={() => toggleManual(key)}
           >
             {manualFor === key ? '× 手動で入力' : '⋯ 手動で入力・メニュー登録'}
           </button>
