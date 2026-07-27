@@ -303,6 +303,13 @@ const MEAL_FIELDS = [
   ['snack', '間食'],
 ] as const;
 
+const emptyByMeal = (): Record<string, string> => ({
+  breakfast: '',
+  lunch: '',
+  dinner: '',
+  snack: '',
+});
+
 function MealSection({ profile, date }: { profile: Profile; date: string }) {
   const profileId = profile.id;
   const entry = useEntry<{
@@ -373,17 +380,36 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     },
     [profileId],
   );
-  const [menuFor, setMenuFor] = useState<string | null>(null);
+  // 手動のkcal・時刻入力とオリジナルメニュー登録は使う頻度が低いので折りたたむ
+  const [manualFor, setManualFor] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [newKcal, setNewKcal] = useState('');
-  // 料理名検索
-  const [query, setQuery] = useState('');
-  const [portion, setPortion] = useState(1);
-  const results = useMemo(() => searchFoods(query), [query]);
+  // 料理名検索。食事ごとに独立した入力欄なので検索語と量も食事ごとに持つ
+  const [queries, setQueries] = useState<Record<string, string>>(emptyByMeal);
+  const clearQuery = (key: string) => setQueries((q) => ({ ...q, [key]: '' }));
+  const [portions, setPortions] = useState<Record<string, number>>({
+    breakfast: 1,
+    lunch: 1,
+    dinner: 1,
+    snack: 1,
+  });
+  const results = useMemo(() => {
+    const out: Record<string, FoodPreset[]> = {};
+    for (const [k] of MEAL_FIELDS) out[k] = searchFoods(queries[k]);
+    return out;
+  }, [queries]);
   // 検索結果に「マイメニュー登録済み」の★を出すための名前セット
   const savedNames = useMemo(() => new Set((foods ?? []).map((f) => f.name)), [foods]);
-  // 追加した手応えを返すための一時表示(検索語は消さず、続けて追加・★を押せるようにする)
-  const [justAdded, setJustAdded] = useState<string | null>(null);
+  // 追加した手応えを返すための一時表示(検索欄は空に戻すので、代わりに名前を出す)
+  const [justAdded, setJustAdded] = useState<{ key: string; name: string } | null>(null);
+
+  function noteAdded(key: string, name: string) {
+    setJustAdded({ key, name });
+    window.setTimeout(
+      () => setJustAdded((cur) => (cur && cur.key === key && cur.name === name ? null : cur)),
+      2000,
+    );
+  }
 
   /** メニューを内訳に足し、そのぶん合計kcalを増やす。時刻が未入力なら現在時刻を入れる */
   function addItem(key: string, item: MealItem) {
@@ -401,6 +427,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
 
   async function applyFood(key: string, food: Food) {
     addItem(key, { name: food.name, kcal: food.kcal });
+    noteAdded(key, food.name);
     await db.foods.update(food.id, { uses: food.uses + 1 });
   }
 
@@ -416,11 +443,12 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
    * 同梱テーブルから選んだぶんを加算する。
    * マイメニューへの登録は★の明示操作だけで行う(検索で食べた物が勝手に増えないように)。
    * 登録済みの物だけ使用回数を進めて、チップの「よく使う順」に反映する。
+   * 続けて2品目を探せるように、追加できたら検索欄は空に戻す。
    */
   async function applyPreset(key: string, preset: FoodPreset) {
-    addItem(key, { name: preset.name, kcal: applyPortion(preset.kcal, portion) });
-    setJustAdded(preset.name);
-    window.setTimeout(() => setJustAdded((cur) => (cur === preset.name ? null : cur)), 1500);
+    addItem(key, { name: preset.name, kcal: applyPortion(preset.kcal, portions[key]) });
+    clearQuery(key);
+    noteAdded(key, preset.name);
     const existing = await findFood(preset.name);
     if (existing) await db.foods.update(existing.id, { uses: existing.uses + 1 });
   }
@@ -511,27 +539,15 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
       <h2>食事</h2>
       {MEAL_FIELDS.map(([key, label]) => {
         const medsForMeal = mealMedications.filter((m) => (m.meals ?? []).includes(key));
+        const q = queries[key].trim();
         return (
         <div key={key}>
-          <div className="row" style={{ alignItems: 'flex-end' }}>
-            <label className="field">
-              {label}(kcal)
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                value={values[key]}
-                onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
-              />
-            </label>
-            <label className="field field-fixed-time">
-              時刻
-              <input
-                type="time"
-                value={times[key]}
-                onChange={(e) => setTimes((t) => ({ ...t, [key]: e.target.value }))}
-              />
-            </label>
+          <div className="meal-head">
+            <span className="meal-title">{label}</span>
+            <span className="muted meal-sum">
+              {Number(values[key]) > 0 ? `${Number(values[key])}kcal` : '未入力'}
+              {times[key] ? ` ・ ${times[key]}` : ''}
+            </span>
           </div>
           {(items[key] ?? []).length > 0 && (
             <div className="meal-items">
@@ -551,103 +567,126 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
               ))}
             </div>
           )}
-          <button
-            className={`ghost menu-toggle ${menuFor === key ? 'active' : ''}`}
-            onClick={() => setMenuFor((cur) => (cur === key ? null : key))}
-          >
-            ＋ メニューから追加
-          </button>
-          {menuFor === key && (
-            <div className="menu-panel">
-              <label className="field" style={{ marginBottom: 6 }}>
-                料理名で探す
-                <input
-                  type="search"
-                  placeholder="例: カレー、ご飯、ラーメン"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-              {query.trim() !== '' && (
-                <>
-                  <div className="portion-row">
-                    <span className="muted">量</span>
-                    {PORTIONS.map((p) => (
-                      <button
-                        key={p.label}
-                        className={`ghost portion-btn ${portion === p.mult ? 'active' : ''}`}
-                        onClick={() => setPortion(p.mult)}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                  {results.length === 0 ? (
-                    <p className="muted" style={{ margin: '6px 0' }}>
-                      見つかりませんでした。下の欄で名前とkcalを登録できます。
-                    </p>
-                  ) : (
-                    <ul className="food-results">
-                      {results.map((f) => {
-                        const saved = savedNames.has(f.name);
-                        return (
-                        <li key={f.name}>
-                          <button className="food-add" onClick={() => void applyPreset(key, f)}>
-                            <span className="food-name">{f.name}</span>
-                            <span className="muted food-unit">{f.unit}</span>
-                            {justAdded === f.name ? (
-                              <span className="food-added">✓ 追加しました</span>
-                            ) : (
-                              <span className="food-kcal">
-                                約{applyPortion(f.kcal, portion)}kcal
-                              </span>
-                            )}
-                          </button>
-                          <button
-                            className={`food-star ${saved ? 'on' : ''}`}
-                            aria-pressed={saved}
-                            aria-label={
-                              saved ? `${f.name}をマイメニューから外す` : `${f.name}をマイメニューに登録`
-                            }
-                            onClick={() => void toggleSaved(f)}
-                          >
-                            {saved ? '★' : '☆'}
-                          </button>
-                        </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  <p className="muted food-note">
-                    カロリーは一般的な目安です。店やレシピで変わります。
-                    <br />
-                    ☆を押すとマイメニューに登録され、次回から検索なしで選べます。
-                  </p>
-                </>
-              )}
-              {query.trim() === '' && (foods ?? []).length === 0 && (
-                <p className="muted" style={{ margin: '0 0 6px' }}>
-                  料理名で検索するか、よく食べる物を登録しておくとタップだけで入力できます。
-                </p>
-              )}
-              {query.trim() === '' && (foods ?? []).length > 0 && (
-                <div className="chips">
-                  {foods!.map((f) => (
-                    <span className="chip" key={f.id}>
-                      <button className="chip-main" onClick={() => void applyFood(key, f)}>
-                        {f.name} {f.kcal}kcal
-                      </button>
-                      <button
-                        className="chip-x"
-                        aria-label={`${f.name}を削除`}
-                        onClick={() => void db.foods.delete(f.id)}
-                      >
-                        ×
-                      </button>
-                    </span>
+          {/* 入力の主役はメニュー検索。開くひと手間をなくして最初から出しておく */}
+          <div className="menu-panel">
+            <label className="field" style={{ marginBottom: 6 }}>
+              料理名で探す
+              <input
+                type="search"
+                placeholder="例: カレー、ご飯、ラーメン"
+                value={queries[key]}
+                onChange={(e) => setQueries((s) => ({ ...s, [key]: e.target.value }))}
+              />
+            </label>
+            {justAdded?.key === key && (
+              <p className="muted food-added-note">✓ {justAdded.name} を追加しました</p>
+            )}
+            {q !== '' && (
+              <>
+                <div className="portion-row">
+                  <span className="muted">量</span>
+                  {PORTIONS.map((p) => (
+                    <button
+                      key={p.label}
+                      className={`ghost portion-btn ${portions[key] === p.mult ? 'active' : ''}`}
+                      onClick={() => setPortions((s) => ({ ...s, [key]: p.mult }))}
+                    >
+                      {p.label}
+                    </button>
                   ))}
                 </div>
-              )}
+                {results[key].length === 0 ? (
+                  <p className="muted" style={{ margin: '6px 0' }}>
+                    見つかりませんでした。下の「手動で入力」から名前とkcalを登録できます。
+                  </p>
+                ) : (
+                  <ul className="food-results">
+                    {results[key].map((f) => {
+                      const saved = savedNames.has(f.name);
+                      return (
+                      <li key={f.name}>
+                        <button className="food-add" onClick={() => void applyPreset(key, f)}>
+                          <span className="food-name">{f.name}</span>
+                          <span className="muted food-unit">{f.unit}</span>
+                          <span className="food-kcal">
+                            約{applyPortion(f.kcal, portions[key])}kcal
+                          </span>
+                        </button>
+                        <button
+                          className={`food-star ${saved ? 'on' : ''}`}
+                          aria-pressed={saved}
+                          aria-label={
+                            saved ? `${f.name}をマイメニューから外す` : `${f.name}をマイメニューに登録`
+                          }
+                          onClick={() => void toggleSaved(f)}
+                        >
+                          {saved ? '★' : '☆'}
+                        </button>
+                      </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <p className="muted food-note">
+                  カロリーは一般的な目安です。店やレシピで変わります。
+                  <br />
+                  ☆を押すとマイメニューに登録され、次回から検索なしで選べます。
+                </p>
+              </>
+            )}
+            {q === '' && (foods ?? []).length === 0 && (
+              <p className="muted" style={{ margin: 0 }}>
+                料理名で検索するか、よく食べる物を登録しておくとタップだけで入力できます。
+              </p>
+            )}
+            {q === '' && (foods ?? []).length > 0 && (
+              <div className="chips">
+                {foods!.map((f) => (
+                  <span className="chip" key={f.id}>
+                    <button className="chip-main" onClick={() => void applyFood(key, f)}>
+                      {f.name} {f.kcal}kcal
+                    </button>
+                    <button
+                      className="chip-x"
+                      aria-label={`${f.name}を削除`}
+                      onClick={() => void db.foods.delete(f.id)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* 手動のkcal・時刻とオリジナルメニュー登録は補助。畳んでおいて必要なときだけ開く */}
+          <button
+            className={`ghost menu-toggle ${manualFor === key ? 'active' : ''}`}
+            onClick={() => setManualFor((cur) => (cur === key ? null : key))}
+          >
+            {manualFor === key ? '× 手動で入力' : '⋯ 手動で入力・メニュー登録'}
+          </button>
+          {manualFor === key && (
+            <div className="menu-panel">
+              <div className="row" style={{ alignItems: 'flex-end' }}>
+                <label className="field" style={{ marginBottom: 0 }}>
+                  {label}(kcal)
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={values[key]}
+                    onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+                  />
+                </label>
+                <label className="field field-fixed-time" style={{ marginBottom: 0 }}>
+                  時刻
+                  <input
+                    type="time"
+                    value={times[key]}
+                    onChange={(e) => setTimes((t) => ({ ...t, [key]: e.target.value }))}
+                  />
+                </label>
+              </div>
               <div className="row" style={{ marginTop: 8, alignItems: 'flex-end' }}>
                 <label className="field" style={{ marginBottom: 0 }}>
                   名前
@@ -677,6 +716,9 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                   登録
                 </button>
               </div>
+              <p className="muted food-note">
+                登録した物はマイメニューに並び、検索なしでタップして追加できます。
+              </p>
             </div>
           )}
           {/* 服薬チェックは食事の記録とは別の作業なので、入力の流れを断たないよう末尾に置く */}

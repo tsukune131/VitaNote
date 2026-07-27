@@ -678,6 +678,23 @@ button:disabled {
   font-size: 13px;
 }
 
+.meal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.meal-title {
+  font-weight: 600;
+}
+
+.meal-sum {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
 .meal-items {
   display: flex;
   flex-wrap: wrap;
@@ -768,10 +785,10 @@ button:disabled {
   color: #e0a800;
 }
 
-.food-added {
-  margin-left: auto;
-  white-space: nowrap;
-  font-size: 13px;
+/* 検索欄を空に戻すぶん、追加できたことは文言で返す */
+.food-added-note {
+  margin: -2px 0 6px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--success);
 }
