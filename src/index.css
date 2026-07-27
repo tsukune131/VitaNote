@@ -646,6 +646,37 @@ button:disabled {
   margin-bottom: 12px;
 }
 
+/* 1日の合計。紙片の外に置いて、4食の集計だと分かるようにする */
+.meal-total {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.meal-total strong {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 手動入力は補助。紙片の隅に小さく畳んでおき、検索の邪魔をしない */
+.manual-toggle {
+  display: block;
+  margin: 6px 0 0 auto;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.manual-toggle.active {
+  color: var(--text);
+}
+
+.manual-panel {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -678,28 +709,62 @@ button:disabled {
   font-size: 13px;
 }
 
+/* ---- 1食ぶんの紙片 ----
+   4食を続けて並べると境目が読めないので、食事ごとに面を区切る。
+   面は紙(--bg)、見出しは絵文字+名前、右肩に合計。 */
+
+.meal-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 10px 8px;
+  margin-bottom: 10px;
+}
+
 .meal-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .meal-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 15px;
   font-weight: 600;
 }
 
+.meal-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
 .meal-sum {
-  font-size: 13px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meal-sum strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.meal-time {
+  font-size: 12px;
 }
 
 .meal-items {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: -4px 0 10px;
+  margin: 0 0 8px;
 }
 
 .chip .chip-label {
@@ -1008,17 +1073,16 @@ input[type='search'].food-query {
   margin-bottom: 14px;
 }
 
+/* 設定タブのカードの中に置くので、他の設定項目と同じ字面に揃える */
 .legal-links {
-  text-align: center;
-  font-size: 11px;
+  margin: 0;
+  font-size: 13px;
   color: var(--muted);
-  padding: 4px 0 8px;
 }
 
 .legal-links a,
 .legal-links .linklike {
-  color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 /* リンクに見えるボタン(アプリ内シートを開くため、aではなくbuttonを使う箇所) */

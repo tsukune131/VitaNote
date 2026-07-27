@@ -303,6 +303,14 @@ const MEAL_FIELDS = [
   ['snack', '間食'],
 ] as const;
 
+/** 見出しを字面より先に絵で拾えるようにする */
+const MEAL_ICONS: Record<string, string> = {
+  breakfast: '🍳',
+  lunch: '🍱',
+  dinner: '🍲',
+  snack: '🍪',
+};
+
 const emptyByMeal = (): Record<string, string> => ({
   breakfast: '',
   lunch: '',
@@ -571,13 +579,25 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
         // 内訳を持たない古い記録ぶん。チップにして取り消せるようにする
         const untracked = untrackedKcal(items[key] ?? [], Number(values[key]) || 0);
         return (
-        <div key={key}>
+        <div className="meal-block" key={key}>
+          {/* 4食が地続きに見えないよう、1食ずつ紙片として区切る */}
           <div className="meal-head">
-            <span className="meal-title">{label}</span>
-            <span className="muted meal-sum">
-              {Number(values[key]) > 0 ? `${Number(values[key])}kcal` : '未入力'}
-              {times[key] ? ` ・ ${times[key]}` : ''}
+            <span className="meal-title">
+              <span className="meal-icon" aria-hidden="true">
+                {MEAL_ICONS[key]}
+              </span>
+              {label}
             </span>
+            {Number(values[key]) > 0 ? (
+              <span className="meal-sum">
+                {times[key] && <span className="muted meal-time">{times[key]}</span>}
+                <span>
+                  <strong>{Number(values[key])}</strong>kcal
+                </span>
+              </span>
+            ) : (
+              <span className="muted meal-sum">未入力</span>
+            )}
           </div>
           {((items[key] ?? []).length > 0 || untracked > 0) && (
             <div className="meal-items">
@@ -612,7 +632,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
             </div>
           )}
           {/* 入力の主役はメニュー検索。開くひと手間をなくして最初から出しておく */}
-          <div className="menu-panel">
+          <div>
             {/* 見出しは置かず、欄を1行に抑える。何を書くかはプレースホルダで足りる */}
             <input
               className="food-query"
@@ -699,13 +719,14 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
           </div>
           {/* 手動のkcal・時刻とオリジナルメニュー登録は補助。畳んでおいて必要なときだけ開く */}
           <button
-            className={`ghost menu-toggle ${manualFor === key ? 'active' : ''}`}
+            className={`ghost manual-toggle ${manualFor === key ? 'active' : ''}`}
+            aria-expanded={manualFor === key}
             onClick={() => toggleManual(key)}
           >
-            {manualFor === key ? '× 手動で入力' : '⋯ 手動で入力・メニュー登録'}
+            手動で入力・お気に入り登録 <span aria-hidden="true">{manualFor === key ? '⌃' : '⌄'}</span>
           </button>
           {manualFor === key && (
-            <div className="menu-panel">
+            <div className="manual-panel">
               <div className="row" style={{ alignItems: 'flex-end' }}>
                 <label className="field" style={{ marginBottom: 0 }}>
                   追加分(kcal)
@@ -818,8 +839,11 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
           })}
         </div>
       )}
-      <div className="row" style={{ alignItems: 'center' }}>
-        <div className="muted">合計 {total.toLocaleString()} kcal</div>
+      <div className="row meal-total" style={{ alignItems: 'center' }}>
+        <div>
+          <span className="muted">1日の合計</span> <strong>{total.toLocaleString()}</strong>
+          <span className="muted"> kcal</span>
+        </div>
         <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />
       </div>
     </div>
@@ -928,10 +952,8 @@ function StepsSection({ profile, date }: { profile: Profile; date: string }) {
   useEffect(() => {
     if (entry) {
       setTotal(String(entry.total));
-      if (entry.hourly) {
-        setHourly(entry.hourly.map((v) => (v ? String(v) : '')));
-        setShowHourly((v) => v || entry.hourly!.some((n) => n > 0));
-      }
+      // 24個の入力欄は場所を取るので、データがあっても開かない。見たい人だけ開く
+      if (entry.hourly) setHourly(entry.hourly.map((v) => (v ? String(v) : '')));
     }
   }, [entry?.id, entry?.total]);
 

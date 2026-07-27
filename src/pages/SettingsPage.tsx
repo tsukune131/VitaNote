@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { db, type Profile } from '../db';
 import { HealthSyncSettings } from '../components/HealthSyncSettings';
+import { LegalLink } from '../components/LegalLink';
 import { MedicationSettings } from '../components/MedicationSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { UsageGuide } from '../components/UsageGuide';
@@ -61,6 +62,16 @@ export function SettingsPage({ profile }: { profile: Profile }) {
             ▼ 各タブの使い方を読む
           </button>
         )}
+      </div>
+
+      {/* 規約類は記録の邪魔にならないよう、アプリの設定と同じ場所にまとめる */}
+      <div className="card">
+        <h2>このアプリについて</h2>
+        <p className="legal-links" style={{ marginBottom: 0 }}>
+          <LegalLink doc="privacy" />
+          ・
+          <LegalLink doc="terms" />
+        </p>
       </div>
     </div>
   );
