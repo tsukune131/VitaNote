@@ -14,7 +14,7 @@ import { AutosaveNote, useAutosave } from '../components/autosave';
 import { type FoodPreset } from '../data/foodPresets';
 import { PORTIONS, applyPortion, searchFoods } from '../lib/foodSearch';
 import { matchExercise, searchExercises } from '../lib/exerciseSearch';
-import { withItemAdded, withItemRemoved } from '../lib/mealItems';
+import { untrackedKcal, withItemAdded, withItemRemoved } from '../lib/mealItems';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
 import {
@@ -382,6 +382,8 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
   );
   // 手動のkcal・時刻入力とオリジナルメニュー登録は使う頻度が低いので折りたたむ
   const [manualFor, setManualFor] = useState<string | null>(null);
+  // 手入力は「追加分」。合計を直接書き換えると検索で積んだ内訳と食い違うため触らせない
+  const [extras, setExtras] = useState<Record<string, string>>(emptyByMeal);
   const [newName, setNewName] = useState('');
   const [newKcal, setNewKcal] = useState('');
   // 料理名検索。食事ごとに独立した入力欄なので検索語と量も食事ごとに持つ
@@ -423,6 +425,21 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
     const next = withItemRemoved(items[key] ?? [], Number(values[key]) || 0, index);
     setItems((s) => ({ ...s, [key]: next.items }));
     setValues((v) => ({ ...v, [key]: next.kcal ? String(next.kcal) : '' }));
+  }
+
+  /** 内訳に載っていないぶんを合計から差し引く。内訳は触らない */
+  function dropUntracked(key: string, kcal: number) {
+    const rest = (Number(values[key]) || 0) - kcal;
+    setValues((v) => ({ ...v, [key]: rest > 0 ? String(rest) : '' }));
+  }
+
+  /** 名前のない手入力ぶんを1つ足す。あとから消せるように内訳へも「手入力」で残す */
+  function addExtra(key: string) {
+    const k = Number(extras[key]);
+    if (!(k > 0)) return;
+    addItem(key, { name: '手入力', kcal: Math.round(k) });
+    setExtras((s) => ({ ...s, [key]: '' }));
+    noteAdded(key, `手入力 ${Math.round(k)}kcal`);
   }
 
   async function applyFood(key: string, food: Food) {
@@ -540,6 +557,8 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
       {MEAL_FIELDS.map(([key, label]) => {
         const medsForMeal = mealMedications.filter((m) => (m.meals ?? []).includes(key));
         const q = queries[key].trim();
+        // 内訳を持たない古い記録ぶん。チップにして取り消せるようにする
+        const untracked = untrackedKcal(items[key] ?? [], Number(values[key]) || 0);
         return (
         <div key={key}>
           <div className="meal-head">
@@ -549,8 +568,22 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
               {times[key] ? ` ・ ${times[key]}` : ''}
             </span>
           </div>
-          {(items[key] ?? []).length > 0 && (
+          {((items[key] ?? []).length > 0 || untracked > 0) && (
             <div className="meal-items">
+              {untracked > 0 && (
+                <span className="chip">
+                  <span className="chip-label">
+                    内訳なし <span className="muted">{untracked}kcal</span>
+                  </span>
+                  <button
+                    className="chip-x"
+                    aria-label={`内訳なしの${untracked}kcalを取り消す`}
+                    onClick={() => dropUntracked(key, untracked)}
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
               {items[key].map((it, i) => (
                 <span className="chip" key={`${it.name}-${i}`}>
                   <span className="chip-label">
@@ -569,15 +602,15 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
           )}
           {/* 入力の主役はメニュー検索。開くひと手間をなくして最初から出しておく */}
           <div className="menu-panel">
-            <label className="field" style={{ marginBottom: 6 }}>
-              料理名で探す
-              <input
-                type="search"
-                placeholder="例: カレー、ご飯、ラーメン"
-                value={queries[key]}
-                onChange={(e) => setQueries((s) => ({ ...s, [key]: e.target.value }))}
-              />
-            </label>
+            {/* 見出しは置かず、欄を1行に抑える。何を書くかはプレースホルダで足りる */}
+            <input
+              className="food-query"
+              type="search"
+              aria-label={`${label}の料理名で探す`}
+              placeholder="料理名で探す(例: カレー、ご飯)"
+              value={queries[key]}
+              onChange={(e) => setQueries((s) => ({ ...s, [key]: e.target.value }))}
+            />
             {justAdded?.key === key && (
               <p className="muted food-added-note">✓ {justAdded.name} を追加しました</p>
             )}
@@ -634,11 +667,6 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                 </p>
               </>
             )}
-            {q === '' && (foods ?? []).length === 0 && (
-              <p className="muted" style={{ margin: 0 }}>
-                料理名で検索するか、よく食べる物を登録しておくとタップだけで入力できます。
-              </p>
-            )}
             {q === '' && (foods ?? []).length > 0 && (
               <div className="chips">
                 {foods!.map((f) => (
@@ -669,13 +697,13 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
             <div className="menu-panel">
               <div className="row" style={{ alignItems: 'flex-end' }}>
                 <label className="field" style={{ marginBottom: 0 }}>
-                  {label}(kcal)
+                  追加分(kcal)
                   <input
                     type="number"
                     inputMode="numeric"
-                    min="0"
-                    value={values[key]}
-                    onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+                    min="1"
+                    value={extras[key]}
+                    onChange={(e) => setExtras((s) => ({ ...s, [key]: e.target.value }))}
                   />
                 </label>
                 <label className="field field-fixed-time" style={{ marginBottom: 0 }}>
@@ -686,8 +714,17 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                     onChange={(e) => setTimes((t) => ({ ...t, [key]: e.target.value }))}
                   />
                 </label>
+                <button
+                  className="secondary"
+                  style={{ flex: '0 0 auto' }}
+                  onClick={() => addExtra(key)}
+                  disabled={!(Number(extras[key]) > 0)}
+                >
+                  追加
+                </button>
               </div>
-              <div className="row" style={{ marginTop: 8, alignItems: 'flex-end' }}>
+              <div className="manual-sub">お気に入りに登録</div>
+              <div className="row" style={{ alignItems: 'flex-end' }}>
                 <label className="field" style={{ marginBottom: 0 }}>
                   名前
                   <input
@@ -717,7 +754,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                 </button>
               </div>
               <p className="muted food-note">
-                登録した物はマイメニューに並び、検索なしでタップして追加できます。
+                登録した物は検索欄の下に並び、次回からタップだけで追加できます。
               </p>
             </div>
           )}

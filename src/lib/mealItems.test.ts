@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { withItemAdded, withItemRemoved } from './mealItems';
+import { untrackedKcal, withItemAdded, withItemRemoved } from './mealItems';
 
 const カレー = { name: 'カレーライス', kcal: 700 };
 const ご飯 = { name: 'ご飯', kcal: 235 };
+
+describe('untrackedKcal', () => {
+  it('内訳がなければ合計がまるごと残る', () => {
+    expect(untrackedKcal([], 500)).toBe(500);
+  });
+
+  it('内訳ぶんを引いた端数を返す', () => {
+    expect(untrackedKcal([カレー], 800)).toBe(100);
+  });
+
+  it('内訳で合計を満たしていれば0', () => {
+    expect(untrackedKcal([カレー, ご飯], 935)).toBe(0);
+  });
+
+  it('内訳が合計を超えていても負にしない', () => {
+    expect(untrackedKcal([カレー], 100)).toBe(0);
+  });
+});
 
 describe('withItemAdded', () => {
   it('メニューを足して合計を増やす', () => {

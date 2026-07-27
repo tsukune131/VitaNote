@@ -711,6 +711,20 @@ button:disabled {
   padding: 6px 4px 6px 12px;
 }
 
+/* 見出しを持たない単独の入力欄。上のmargin-topぶんだけ詰める */
+input[type='search'].food-query {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+/* 手動パネルの中の小見出し */
+.manual-sub {
+  margin: 12px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .portion-row {
   display: flex;
   align-items: center;

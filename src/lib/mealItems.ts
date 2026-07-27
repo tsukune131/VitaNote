@@ -8,6 +8,15 @@ import type { MealItem } from '../db';
  * 両者がずれることはある。そのときは合計欄の値を正とする(内訳は触らない)。
  */
 
+/**
+ * 合計のうち内訳に載っていないぶん。
+ * 内訳を持たない古い記録が該当する。合計を直接は編集できないので、
+ * これをチップとして見せて取り消せるようにする。
+ */
+export function untrackedKcal(items: MealItem[], kcal: number): number {
+  return Math.max(0, kcal - items.reduce((sum, i) => sum + i.kcal, 0));
+}
+
 /** メニューを1つ足し、そのぶん合計kcalを増やす */
 export function withItemAdded(
   items: MealItem[],
