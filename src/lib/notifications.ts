@@ -5,26 +5,32 @@ import { isNativeApp } from './platform';
  * 記録リマインダーの通知。
  *
  * 体重通知の仕様:
- * - 1件目は毎日必ず届く(OSの繰り返し通知)
- * - 2件目以降は「その日の体重が未入力なら届く」条件付き
+ * - 1件目も含め、すべて「その時刻までに体重が未入力なら届く」条件付き
  *
- * OSの繰り返し通知に条件判定は無いので、2件目以降は繰り返しにはせず、
- * 「当日ぶんの単発通知」をアプリを開くたびに貼り直すことで実現する。
- * 体重を保存したらその日ぶんを取り消す。
+ * OSの繰り返し通知に条件判定は無いので、繰り返しは使わず「その日ぶんの単発通知」を
+ * 日付ごとに積む。体重を保存したら、その日の残りぶんをまとめて取り消す。
  *
- * この方式では、丸一日アプリを開かなかった日は2件目以降が積まれない。
- * その日は1件目(必ず届く繰り返し通知)だけが届く。1件目で開いてもらえれば
- * その時点で当日ぶんが積まれるので、実用上はこれで足りると判断した。
+ * 単発だけだと丸一日アプリを開かなかった日に何も届かなくなるので、
+ * 先の数日ぶんまで前もって積んでおき、アプリを開くたびに窓を先へずらす。
+ * 積んだ先の日ぶんは、その日に体重を書けば(=アプリを開けば)取り消される。
  */
 
-/** 1件目(必ず届く)の固定ID */
-const WEIGHT_MANDATORY_ID = 100;
-/** 2件目以降(条件付き)に予約したID。設定できる時刻の上限にもなる */
-const WEIGHT_CONDITIONAL_IDS = Array.from({ length: 9 }, (_, i) => 101 + i);
+/** 体重通知のID = BASE + 日オフセット*TIMES_PER_DAY + 時刻の番号 */
+const WEIGHT_ID_BASE = 100;
+/** 1日に積める時刻の数。設定できる時刻の上限にもなる */
+const WEIGHT_TIMES_PER_DAY = 10;
+/** 何日先ぶんまで前もって積むか(アプリを開かない日を埋めるため) */
+const WEIGHT_DAYS_AHEAD = 7;
 const WAIST_ID = 200;
 
+const weightId = (dayOffset: number, timeIndex: number) =>
+  WEIGHT_ID_BASE + dayOffset * WEIGHT_TIMES_PER_DAY + timeIndex;
+const weightIdsForDay = (dayOffset: number) =>
+  Array.from({ length: WEIGHT_TIMES_PER_DAY }, (_, i) => weightId(dayOffset, i));
+const ALL_WEIGHT_IDS = Array.from({ length: WEIGHT_DAYS_AHEAD }, (_, d) => weightIdsForDay(d)).flat();
+
 const ids = (list: number[]) => list.map((id) => ({ id }));
-const ALL_IDS = ids([WEIGHT_MANDATORY_ID, ...WEIGHT_CONDITIONAL_IDS, WAIST_ID]);
+const ALL_IDS = ids([...ALL_WEIGHT_IDS, WAIST_ID]);
 
 export type PermissionState = 'granted' | 'denied' | 'unsupported';
 
@@ -48,17 +54,18 @@ export async function ensureNotificationPermission(): Promise<PermissionState> {
   }
 }
 
-/** 今日のHH:mmをDateにする */
-function todayAt(time: string): Date {
+/** dayOffset日後のHH:mmをDateにする */
+function dateAt(time: string, dayOffset: number): Date {
   const [hour, minute] = time.split(':').map(Number);
   const at = new Date();
+  at.setDate(at.getDate() + dayOffset);
   at.setHours(hour, minute, 0, 0);
   return at;
 }
 
 /**
  * 設定に合わせて通知をすべて貼り直す。
- * recordedToday(その日の体重を記録済みか)がtrueなら、当日の条件付きは積まない。
+ * recordedToday(その日の体重を記録済みか)がtrueなら、当日ぶんは積まない。
  */
 export async function syncReminders(
   settings: ReminderSettings,
@@ -81,25 +88,21 @@ export async function syncReminders(
     const notifications = [];
 
     if (settings.weightEnabled && settings.weightTimes.length > 0) {
-      const [first, ...rest] = settings.weightTimes;
-      const [hour, minute] = first.split(':').map(Number);
-      notifications.push({
-        id: WEIGHT_MANDATORY_ID,
-        title: 'VitaNote',
-        body: 'きょうの体重を書き込みましょう',
-        schedule: { on: { hour, minute }, allowWhileIdle: true },
-      });
-
-      if (!recordedToday) {
-        const now = new Date();
-        rest.forEach((time, i) => {
-          const at = todayAt(time);
-          // 過ぎた時刻には積めない。積めるIDの数(=時刻の数)にも上限がある
-          if (at <= now || i >= WEIGHT_CONDITIONAL_IDS.length) return;
+      const now = new Date();
+      const times = settings.weightTimes.slice(0, WEIGHT_TIMES_PER_DAY);
+      // iOSは予約できる通知が64件まで。溢れると切り捨てられるので、時刻を多く
+      // 設定した人には先の日ぶんを諦めて、近い日から確実に積む
+      const days = Math.max(1, Math.min(WEIGHT_DAYS_AHEAD, Math.floor(60 / times.length)));
+      for (let day = 0; day < days; day++) {
+        // 今日ぶんは、すでに体重が書かれていれば1件目から積まない
+        if (day === 0 && recordedToday) continue;
+        times.forEach((time, i) => {
+          const at = dateAt(time, day);
+          if (at <= now) return; // 過ぎた時刻には積めない
           notifications.push({
-            id: WEIGHT_CONDITIONAL_IDS[i],
+            id: weightId(day, i),
             title: 'VitaNote',
-            body: 'きょうの体重がまだ書かれていません',
+            body: i === 0 ? 'きょうの体重を書き込みましょう' : 'きょうの体重がまだ書かれていません',
             schedule: { at, allowWhileIdle: true },
           });
         });
@@ -133,15 +136,15 @@ export async function cancelAllReminders(): Promise<void> {
   }
 }
 
-/** その日の体重を保存したときに呼ぶ。当日ぶんの条件付き通知を取り消す */
-export async function cancelTodaysConditionalWeightReminders(): Promise<void> {
+/** その日の体重を保存したときに呼ぶ。当日ぶんの体重通知を取り消す */
+export async function cancelTodaysWeightReminders(): Promise<void> {
   if (!isNativeApp()) return;
   try {
-    await LocalNotifications.cancel({ notifications: ids(WEIGHT_CONDITIONAL_IDS) });
+    await LocalNotifications.cancel({ notifications: ids(weightIdsForDay(0)) });
   } catch {
     // 同上
   }
 }
 
-/** 設定できる体重通知の時刻の上限(1件目+条件付きの枠) */
-export const MAX_WEIGHT_NOTIFY_TIMES = WEIGHT_CONDITIONAL_IDS.length + 1;
+/** 設定できる体重通知の時刻の上限 */
+export const MAX_WEIGHT_NOTIFY_TIMES = WEIGHT_TIMES_PER_DAY;

@@ -91,8 +91,8 @@ export default function App() {
     };
   }, [syncHealth, askAccess, profileId, onboarding]);
 
-  // 通知は起動・前面復帰のたびに貼り直す。2件目以降の体重通知は繰り返しにできず
-  // 「当日ぶんの単発」を積む方式なので、開いたときに積み直す必要がある
+  // 通知は起動・前面復帰のたびに貼り直す。体重通知は「未入力なら届く」条件付きで
+  // 繰り返しにできず、日付ごとの単発を積む方式なので、開いたときに窓をずらす必要がある
   const notifyWeight = profile?.notifyWeight ?? false;
   const notifyWeightTimes = (profile?.notifyWeightTimes ?? DEFAULT_WEIGHT_NOTIFY_TIMES).join(',');
   const notifyWaist = profile?.notifyWaist ?? false;

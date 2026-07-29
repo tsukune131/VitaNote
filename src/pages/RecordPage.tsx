@@ -39,7 +39,7 @@ import {
 } from '../lib/date';
 import { isHealthSyncEnabled, writeBodyMetricsToHealth } from '../lib/health';
 import { tapFeedback } from '../lib/nativeUi';
-import { cancelTodaysConditionalWeightReminders } from '../lib/notifications';
+import { cancelTodaysWeightReminders } from '../lib/notifications';
 import { tipForDate } from '../lib/tips';
 
 export function RecordPage({ profile }: { profile: Profile }) {
@@ -137,8 +137,8 @@ function BodyMetricsSection({ profile, date }: { profile: Profile; date: string 
     if (metricEntry) await db.healthMetrics.update(metricEntry.id, waistData);
     else if (w > 0) await db.healthMetrics.add({ profileId, date, ...waistData } as never);
 
-    // 今日の体重を記録したら、2件目以降のリマインダー通知は不要なので取り消す
-    if (date === todayStr()) await cancelTodaysConditionalWeightReminders();
+    // 今日の体重を記録したら、その日のリマインダー通知は不要なので取り消す
+    if (v > 0 && date === todayStr()) await cancelTodaysWeightReminders();
   }
 
   useAutosave(`${kg}|${fat}|${waist}`, dirty, save);
