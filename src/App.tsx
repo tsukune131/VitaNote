@@ -7,14 +7,13 @@ import {
   type Profile,
 } from './db';
 import { Onboarding } from './components/Onboarding';
-import { todayStr } from './lib/date';
 import {
   importStepsFromHealth,
   isHealthSyncEnabled,
   isHealthSyncUnset,
   requestHealthAccess,
 } from './lib/health';
-import { cancelAllReminders, syncReminders } from './lib/notifications';
+import { refreshReminders } from './lib/reminderSync';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -91,39 +90,25 @@ export default function App() {
     };
   }, [syncHealth, askAccess, profileId, onboarding]);
 
-  // 通知は起動・前面復帰のたびに貼り直す。体重通知は「未入力なら届く」条件付きで
-  // 繰り返しにできず、日付ごとの単発を積む方式なので、開いたときに窓をずらす必要がある
+  // 通知は起動・前面復帰のたびに貼り直す。通知は「未記録なら届く」条件付きで
+  // 繰り返しにできず、単発を積む方式なので、開いたときに窓をずらす必要がある
   const notifyWeight = profile?.notifyWeight ?? false;
   const notifyWeightTimes = (profile?.notifyWeightTimes ?? DEFAULT_WEIGHT_NOTIFY_TIMES).join(',');
   const notifyWaist = profile?.notifyWaist ?? false;
   const notifyWaistWeekday = profile?.notifyWaistWeekday ?? DEFAULT_WAIST_NOTIFY_WEEKDAY;
   useEffect(() => {
-    if (profileId === undefined || onboarding !== false) return;
-    if (!notifyWeight && !notifyWaist) {
-      void cancelAllReminders();
-      return;
-    }
+    if (profile === undefined || onboarding !== false) return;
 
-    const apply = async () => {
-      const today = todayStr();
-      const weighed = await db.weights.where('[profileId+date]').equals([profileId, today]).first();
-      await syncReminders(
-        {
-          weightEnabled: notifyWeight,
-          weightTimes: notifyWeightTimes.split(','),
-          waistEnabled: notifyWaist,
-          waistWeekday: notifyWaistWeekday,
-        },
-        weighed != null,
-      );
-    };
-    void apply();
+    const apply = () => void refreshReminders(profile);
+    apply();
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void apply();
+      if (document.visibilityState === 'visible') apply();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
+    // profileそのものは参照が変わるたびに再実行されてしまうので、通知に関わる値だけを見る
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, onboarding, notifyWeight, notifyWeightTimes, notifyWaist, notifyWaistWeekday]);
 
   if (profiles === undefined || onboarding === undefined) return null; // 読み込み中

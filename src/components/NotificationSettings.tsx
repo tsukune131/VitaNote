@@ -136,7 +136,7 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
       </label>
       {waistOn && (
         <label className="field" style={{ marginTop: 8, marginBottom: 0 }}>
-          通知曜日
+          通知曜日(9:00)
           <select
             value={waistWeekday}
             onChange={(e) =>
@@ -151,6 +151,9 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
               </option>
             ))}
           </select>
+          <p className="muted" style={{ margin: '4px 0 0' }}>
+            直前の1週間に腹囲を入力済みなら届きません
+          </p>
         </label>
       )}
       {waistOn && (
