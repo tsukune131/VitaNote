@@ -44,6 +44,23 @@ describe('searchFoods', () => {
     expect(searchFoods('ぎょうざ')[0].name).toBe('餃子');
   });
 
+  it('よみを/で並べた別の呼び方でも引ける', () => {
+    expect(searchFoods('むぎめし')[0].name).toBe('麦飯');
+    expect(searchFoods('むぎごはん')[0].name).toBe('麦飯');
+  });
+
+  it('家庭の定番おかずが引ける', () => {
+    for (const q of ['豚キムチ', 'にらたま', '肉野菜炒め', 'ぶり大根', '酢の物', '釜玉うどん']) {
+      expect(searchFoods(q).length, q).toBeGreaterThan(0);
+    }
+  });
+
+  it('外食・中食のよくある頼み方が引ける', () => {
+    for (const q of ['のり弁当', 'とんかつ定食', 'サラダチキン', 'モーニングセット', 'かえだま']) {
+      expect(searchFoods(q).length, q).toBeGreaterThan(0);
+    }
+  });
+
   it('limitを超えない', () => {
     expect(searchFoods('ご', 5).length).toBeLessThanOrEqual(5);
   });
@@ -55,7 +72,7 @@ describe('searchFoods', () => {
 
 describe('FOOD_PRESETS', () => {
   it('パースできている', () => {
-    expect(FOOD_PRESETS.length).toBeGreaterThan(400);
+    expect(FOOD_PRESETS.length).toBeGreaterThan(1000);
   });
 
   it('全件が正のkcalと単位とカテゴリを持つ', () => {
