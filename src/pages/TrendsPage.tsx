@@ -313,7 +313,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           <div className="empty-note">
             この月の記録がまだありません。
             <br />
-            「きょう」タブから入力するとグラフが表示されます。
+            「きょう」「カレンダー」タブから入力するとグラフが表示されます。
           </div>
         </div>
       )}
@@ -529,7 +529,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       {chart === 'steps' && !selectedHourly && (
         <div className="card">
           <div className="empty-note">
-            「きょう」タブで時間帯別の歩数を入力すると、1時間ごとのグラフが表示されます。
+            「カレンダー」タブで歩数をタップして時間帯別を入力すると、1時間ごとのグラフが表示されます。
           </div>
         </div>
       )}

@@ -114,7 +114,9 @@ body {
   margin: 0 0 10px;
 }
 
-.card h3 {
+/* シートの中身もカードと同じ紙面として扱う */
+.card h3,
+.modal-body h3 {
   font-size: 12px;
   color: var(--muted);
   margin: 12px 0 6px;
@@ -291,10 +293,10 @@ button:disabled {
   right: 0;
   display: flex;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   background: var(--card);
   border-top: 1px solid var(--border);
-  padding: 4px 8px calc(6px + env(safe-area-inset-bottom));
+  padding: 4px 6px calc(6px + env(safe-area-inset-bottom));
   z-index: 10;
 }
 
@@ -303,10 +305,12 @@ button:disabled {
   max-width: 200px;
   background: transparent;
   color: var(--muted);
-  /* 4タブ入るので、狭い端末で「ふりかえり」が折り返さないよう詰める */
-  font-size: 12px;
+  /* 5タブ入るので、狭い端末で「カレンダー」「ふりかえり」が
+     折り返さないよう字と余白を詰める */
+  font-size: 11px;
+  letter-spacing: -0.01em;
   white-space: nowrap;
-  padding: 12px 2px 10px;
+  padding: 12px 1px 10px;
   border-radius: 0;
   border-top: 2px solid transparent;
   margin-top: -5px;
@@ -368,15 +372,155 @@ button:disabled {
   margin-top: 6px;
 }
 
-.hourly-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+/* ---- カレンダー: 1日1行の歩数とメモ ---- */
+
+.calendar-table {
+  width: 100%;
+  /* メモが長い日に表がはみ出さないよう、列幅は固定して1行に丸める */
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
 }
 
-.hourly-grid label {
-  font-size: 10px;
+.calendar-table th {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--muted);
+  text-align: left;
+  padding: 0 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.calendar-table td {
+  padding: 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.calendar-table tr:last-child td {
+  border-bottom: none;
+}
+
+.calendar-col-day {
+  width: 4.2em;
+}
+
+.calendar-col-steps,
+.calendar-table th.calendar-col-steps {
+  width: 6.6em;
+  text-align: right;
+}
+
+td.calendar-col-day {
+  padding: 0 6px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-weekday {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* 土日は紙の色を残して、平日の行と見分けられるようにする */
+.calendar-row.weekend td {
+  background: var(--bg);
+}
+
+.calendar-row.today td {
+  background: var(--accent-soft);
+}
+
+/* 行そのものが書き込み欄なので、ボタンの見た目は消して行いっぱいに広げる */
+.calendar-cell {
+  width: 100%;
+  min-height: 40px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+  text-align: left;
+  padding: 10px 6px;
+  border-radius: 0;
+}
+
+.calendar-cell-steps {
+  text-align: right;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-cell-note {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-add {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.calendar-blank {
+  display: block;
+  padding: 10px 6px;
+  color: var(--muted);
+}
+
+/* 時間帯別の記録がある日の印(タップすると内訳が見られる合図) */
+.calendar-cell-steps.has-hourly {
+  text-decoration: underline dotted var(--muted);
+  text-underline-offset: 3px;
+}
+
+/* ---- 時間帯別の歩数(カレンダーのシートの中) ---- */
+
+.steps-hours {
+  display: grid;
+  gap: 4px;
+}
+
+.steps-hour {
+  display: grid;
+  grid-template-columns: 2.8em 1fr 6.4em;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 棒を出さないときは、入力欄を右端に離さず時刻の隣に置く */
+.steps-hours.no-bars .steps-hour {
+  grid-template-columns: 2.8em 6.4em;
+  justify-content: start;
+}
+
+.steps-hour-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.steps-hour-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--grid);
+  overflow: hidden;
+}
+
+.steps-hour-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--muted);
+}
+
+.steps-hour input {
+  margin-top: 0;
+  padding: 6px 8px;
+  text-align: right;
 }
 
 /* ---- きょうのしおり(ストリーク+進捗リング) ---- */
@@ -1146,6 +1290,27 @@ input[type='search'].food-query {
   flex: 1;
   border: 0;
   width: 100%;
+}
+
+/* アプリ内シートに直接書き込むとき(歩数・メモ)の中身。
+   時間帯別の24行が入るので、シートの中だけをスクロールさせる */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px;
+}
+
+/* メモのシートは1日1ページの紙面として、罫線をシートいっぱいに広げる */
+.modal-body.sheet-fill {
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+.modal-body.sheet-fill .note-area {
+  flex: 1;
+  resize: none;
 }
 
 .empty-note {

@@ -70,9 +70,7 @@ export function RecordPage({ profile }: { profile: Profile }) {
       <HealthMetricsSection key={`h-${profile.id}-${date}`} profile={profile} date={date} />
       <MealSection key={`m-${profile.id}-${date}`} profile={profile} date={date} />
       <WaterSection profileId={profile.id} date={date} />
-      <StepsSection key={`s-${profile.id}-${date}`} profile={profile} date={date} />
       <ExerciseSection profileId={profile.id} date={date} />
-      <NoteSection key={`n-${profile.id}-${date}`} profileId={profile.id} date={date} />
       <DailySummary profile={profile} date={date} />
     </div>
   );
@@ -928,111 +926,6 @@ function WaterSection({ profileId, date }: { profileId: number; date: string }) 
   );
 }
 
-/* ---------- 歩数 ---------- */
-
-function StepsSection({ profile, date }: { profile: Profile; date: string }) {
-  const profileId = profile.id;
-  const entry = useEntry<{ id: number; total: number; hourly?: number[] }>(
-    'steps',
-    profileId,
-    date,
-  );
-  // 連携中の「今日」はアプリを開くたびヘルスケアの値で上書きされるので手入力させない。
-  // 過去日は取り込みが手入力を上書きしないため、そのまま編集できる。
-  // ただし取り込めていないうちは手入力を残す(ヘルスケアの許可を断った場合に
-  // 空の入力欄が編集できないまま残ってしまうため)
-  const managedByHealth =
-    isHealthSyncEnabled(profile) && date === todayStr() && (entry?.total ?? 0) > 0;
-  const [total, setTotal] = useState('');
-  const [hourly, setHourly] = useState<string[]>(Array(24).fill(''));
-  const [showHourly, setShowHourly] = useState(false);
-
-  // ヘルスケアからの取り込みは同じ行を更新するので、idだけでなく値の変化も見て
-  // 入力欄に反映する(反映しないと古い手入力値で上書きし返してしまう)
-  useEffect(() => {
-    if (entry) {
-      setTotal(String(entry.total));
-      // 24個の入力欄は場所を取るので、データがあっても開かない。見たい人だけ開く
-      if (entry.hourly) setHourly(entry.hourly.map((v) => (v ? String(v) : '')));
-    }
-  }, [entry?.id, entry?.total]);
-
-  const hourlyNums = hourly.map((v) => Number(v) || 0);
-  const hourlySum = hourlyNums.reduce((a, b) => a + b, 0);
-  const hasHourly = hourlySum > 0;
-
-  const currentTotal = hasHourly ? hourlySum : Number(total) || 0;
-  const dirty =
-    currentTotal !== (entry?.total ?? 0) ||
-    (hasHourly && JSON.stringify(hourlyNums) !== JSON.stringify(entry?.hourly ?? []));
-
-  async function save() {
-    const t = hasHourly ? hourlySum : Number(total) || 0;
-    if (!(t > 0)) return; // 空(0歩)は保存しない
-    const data = { total: t, hourly: hasHourly ? hourlyNums : undefined };
-    if (entry) await db.steps.update(entry.id, data);
-    else await db.steps.add({ profileId, date, ...data } as never);
-  }
-
-  // 連携中の今日はヘルスケアが正なので、こちらから保存し返さない
-  useAutosave(`${total}|${hasHourly}|${hourly.join(',')}`, dirty && !managedByHealth, save);
-
-  return (
-    <div className="card">
-      <h2>歩数</h2>
-      <p className="muted" style={{ marginTop: 0 }}>
-        {managedByHealth
-          ? 'ヘルスケアから自動で取り込んでいます。アプリを開くたびに最新になります。'
-          : 'iPhoneのヘルスケアアプリの歩数を転記してください。'}
-      </p>
-      <div className="row" style={{ alignItems: 'flex-end' }}>
-        <label className="field" style={{ marginBottom: 0 }}>
-          1日の合計歩数{hasHourly && !managedByHealth && '(時間帯別の合計で上書き)'}
-          <input
-            type="number"
-            inputMode="numeric"
-            min="0"
-            value={hasHourly ? String(hourlySum) : total}
-            disabled={hasHourly || managedByHealth}
-            onChange={(e) => setTotal(e.target.value)}
-          />
-        </label>
-        {!managedByHealth && <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />}
-      </div>
-      <button
-        className="ghost"
-        style={{ marginTop: 8 }}
-        onClick={() => setShowHourly((v) => !v)}
-      >
-        {showHourly
-          ? '▲ 時間帯別を閉じる'
-          : managedByHealth
-            ? '▼ 時間帯別(1時間ごと)を見る'
-            : '▼ 時間帯別(1時間ごと)に入力する'}
-      </button>
-      {showHourly && (
-        <div className="hourly-grid" style={{ marginTop: 8 }}>
-          {hourly.map((v, h) => (
-            <label key={h}>
-              {h}時
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                value={v}
-                disabled={managedByHealth}
-                onChange={(e) =>
-                  setHourly((arr) => arr.map((x, i) => (i === h ? e.target.value : x)))
-                }
-              />
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ---------- 運動 ---------- */
 
 function ExerciseSection({ profileId, date }: { profileId: number; date: string }) {
@@ -1172,47 +1065,6 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/* ---------- 日記メモ ---------- */
-
-function NoteSection({ profileId, date }: { profileId: number; date: string }) {
-  const entry = useEntry<{ id: number; text: string }>('notes', profileId, date);
-  const [text, setText] = useState('');
-
-  useEffect(() => {
-    if (entry) setText(entry.text);
-  }, [entry?.id]);
-
-  const dirty = text !== (entry?.text ?? '');
-
-  async function save() {
-    const t = text.trim();
-    if (entry) {
-      if (t) await db.notes.update(entry.id, { text: t });
-      else await db.notes.delete(entry.id); // 空にしたら消す
-    } else if (t) {
-      await db.notes.add({ profileId, date, text: t } as never);
-    }
-  }
-
-  useAutosave(text, dirty, save);
-
-  return (
-    <div className="card">
-      <h2>この日のメモ</h2>
-      <textarea
-        className="note-area"
-        rows={4}
-        placeholder="がんばったこと、気づいたこと、明日の自分へのひとことなど"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <div className="row" style={{ marginTop: 8 }}>
-        <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />
-      </div>
     </div>
   );
 }

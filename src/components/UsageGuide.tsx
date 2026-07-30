@@ -24,8 +24,17 @@ export function UsageGuide({ onboarding = false }: { onboarding?: boolean }) {
         <span className="tab-name">きょう</span>
         <div>
           <p className="muted">
-            毎日ここに書き込みます。体重・体脂肪率・腹囲、食事、飲水、歩数、運動、
-            お薬のチェック、日記まで1ページにまとまっています。
+            毎日ここに書き込みます。体重・体脂肪率・腹囲、食事、飲水、運動、
+            お薬のチェックが1ページにまとまっています。
+          </p>
+        </div>
+      </div>
+      <div className="onboarding-guide-item">
+        <span className="tab-name">カレンダー</span>
+        <div>
+          <p className="muted">
+            1か月を1日1行で見渡します。歩数とメモはここに書き込みます。
+            歩数をタップすると時間帯別(1時間ごと)の内訳が開きます。
           </p>
         </div>
       </div>

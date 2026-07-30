@@ -16,16 +16,18 @@ import {
 import { refreshReminders } from './lib/reminderSync';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
+import { CalendarPage } from './pages/CalendarPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 // Rechartsを使う推移画面はバンドルの大部分を占めるため、選んだ時だけ読み込む
 const TrendsPage = lazy(() => import('./pages/TrendsPage').then((m) => ({ default: m.TrendsPage })));
 
-type Tab = 'you' | 'record' | 'trends' | 'settings';
+type Tab = 'you' | 'record' | 'calendar' | 'trends' | 'settings';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'you', label: 'あなた' },
   { key: 'record', label: 'きょう' },
+  { key: 'calendar', label: 'カレンダー' },
   { key: 'trends', label: 'ふりかえり' },
   { key: 'settings', label: '設定' },
 ];
@@ -127,6 +129,7 @@ export default function App() {
 
       {tab === 'you' && <YouPage profile={profile} />}
       {tab === 'record' && <RecordPage profile={profile} />}
+      {tab === 'calendar' && <CalendarPage profile={profile} />}
       {tab === 'trends' && (
         <Suspense fallback={<div className="empty-note">読み込み中…</div>}>
           <TrendsPage profile={profile} />
