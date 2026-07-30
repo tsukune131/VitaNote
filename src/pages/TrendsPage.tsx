@@ -46,6 +46,7 @@ import {
   todayStr,
 } from '../lib/date';
 import { useChartTheme, type ChartTheme } from '../lib/chartTheme';
+import { HourlyStepsChart } from '../components/HourlyStepsChart';
 
 interface DayRow {
   d: number; // 日(1〜31)
@@ -534,18 +535,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         </div>
       )}
       {chart === 'steps' && selectedStepsRow && selectedHourly && (
-        <ChartCard title={`${selectedStepsRow.d}日の歩数(時間帯別)`}>
-          <BarChart
-            data={selectedHourly.map((v, h) => ({ h: `${h}`, steps: v }))}
-            margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
-          >
-            <CartesianGrid stroke={theme.grid} vertical={false} />
-            <XAxis dataKey="h" tick={{ fontSize: 10, fill: theme.axis }} stroke={theme.grid} interval={2} />
-            <YAxis {...yAxisProps(theme)} />
-            <Tooltip {...tooltipProps(theme)} formatter={fmtUnit('歩')} labelFormatter={(h) => `${h}時台`} />
-            <Bar dataKey="steps" name="歩数" fill={theme.steps} radius={[3, 3, 0, 0]} />
-          </BarChart>
-        </ChartCard>
+        // グラフ本体は「カレンダー」の歩数シートと共用する
+        <div className="card chart-block">
+          <div className="chart-title">{selectedStepsRow.d}日の歩数(時間帯別)</div>
+          <HourlyStepsChart hourly={selectedHourly} />
+        </div>
       )}
 
       {chart === 'burn' && (

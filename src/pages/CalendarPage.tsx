@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type NoteEntry, type Profile, type StepEntry } from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
@@ -14,6 +14,11 @@ import {
   weekdayOf,
 } from '../lib/date';
 import { isHealthSyncEnabled } from '../lib/health';
+
+// Rechartsはバンドルの大部分を占めるので、歩数シートを開いた時だけ読み込む
+const HourlyStepsChart = lazy(() =>
+  import('../components/HourlyStepsChart').then((m) => ({ default: m.HourlyStepsChart })),
+);
 
 interface DayRow {
   date: string;
@@ -75,7 +80,8 @@ export function CalendarPage({ profile }: { profile: Profile }) {
           ◀
         </button>
         <div className="title">{formatMonth(month)}</div>
-        <button onClick={() => moveMonth(1)} disabled={month >= thisMonth} aria-label="次の月">
+        {/* 先の月へも進める。歩数は書けないが、予定のメモは先に書ける */}
+        <button onClick={() => moveMonth(1)} aria-label="次の月">
           ▶
         </button>
         <button onClick={() => setMonth(thisMonth)} disabled={month === thisMonth}>
@@ -83,6 +89,8 @@ export function CalendarPage({ profile }: { profile: Profile }) {
         </button>
       </div>
 
+      {/* 歩数が1日も無い月(これから来る月・使い始めの月)ではまとめを出さない */}
+      {stepDays.length > 0 && (
       <div className="card">
         <h2>この月の歩数</h2>
         <div className="stat-grid">
@@ -102,11 +110,13 @@ export function CalendarPage({ profile }: { profile: Profile }) {
           </div>
         </div>
       </div>
+      )}
 
       <div className="card">
         <h2>日ごとの歩数とメモ</h2>
         <p className="muted" style={{ marginTop: 0 }}>
-          歩数をタップすると時間帯別(1時間ごと)を、メモをタップするとその日のメモを書けます。
+          歩数をタップすると時間帯別(1時間ごと)のグラフ、メモをタップするとその日のメモを書けます。
+          メモは先の日付にも書けるので、通院や予定のおぼえ書きにも使えます。
         </p>
         <table className="calendar-table">
           <thead>
@@ -185,21 +195,19 @@ function CalendarRow({
         )}
       </td>
       <td>
-        {isFuture ? (
-          <span className="calendar-blank">—</span>
-        ) : (
-          <button
-            className="calendar-cell calendar-cell-note"
-            onClick={onOpenNote}
-            aria-label={`${formatDateShort(row.date)}のメモ`}
-          >
-            {row.note?.text ? (
-              row.note.text
-            ) : (
-              <span className="calendar-add">＋ メモ</span>
-            )}
-          </button>
-        )}
+        {/* メモは未来の日にも書ける(通院やイベントの予定を先に置いておけるように) */}
+        <button
+          className="calendar-cell calendar-cell-note"
+          onClick={onOpenNote}
+          aria-label={`${formatDateShort(row.date)}のメモ`}
+        >
+          {row.note?.text ? (
+            row.note.text
+          ) : (
+            // 空欄は、記入欄らしい罫線だけを引いておく
+            <span className="calendar-note-line" aria-hidden="true" />
+          )}
+        </button>
       </td>
     </tr>
   );
@@ -228,38 +236,28 @@ function StepsSheet({
   const managedByHealth =
     isHealthSyncEnabled(profile) && date === todayStr() && (entry?.total ?? 0) > 0;
   const [total, setTotal] = useState('');
-  const [hourly, setHourly] = useState<string[]>(Array(24).fill(''));
 
   // ヘルスケアからの取り込みは同じ行を更新するので、idだけでなく値の変化も見て
   // 入力欄に反映する(反映しないと古い手入力値で上書きし返してしまう)
   useEffect(() => {
-    if (entry) {
-      setTotal(String(entry.total));
-      if (entry.hourly) setHourly(entry.hourly.map((v) => (v ? String(v) : '')));
-    }
+    if (entry) setTotal(String(entry.total));
   }, [entry?.id, entry?.total]);
 
-  const hourlyNums = hourly.map((v) => Number(v) || 0);
-  const hourlySum = hourlyNums.reduce((a, b) => a + b, 0);
-  const hasHourly = hourlySum > 0;
-  const peak = Math.max(...hourlyNums);
-
-  const currentTotal = hasHourly ? hourlySum : Number(total) || 0;
-  const dirty =
-    currentTotal !== (entry?.total ?? 0) ||
-    (hasHourly && JSON.stringify(hourlyNums) !== JSON.stringify(entry?.hourly ?? []));
+  // 時間帯別はヘルスケアから取り込んだぶんだけ。手入力は合計のみ受け付ける
+  const hourly = entry?.hourly?.some((v) => v > 0) ? entry.hourly : undefined;
+  const dirty = (Number(total) || 0) !== (entry?.total ?? 0);
 
   async function save() {
-    const t = hasHourly ? hourlySum : Number(total) || 0;
+    const t = Number(total) || 0;
     if (!(t > 0)) return; // 空(0歩)は保存しない
-    const data = { total: t, hourly: hasHourly ? hourlyNums : undefined };
-    if (entry) await db.steps.update(entry.id, data);
-    else await db.steps.add({ profileId, date, ...data } as never);
+    if (entry) await db.steps.update(entry.id, { total: t });
+    else await db.steps.add({ profileId, date, total: t } as never);
   }
 
-  // 連携中の今日はヘルスケアが正なので、こちらから保存し返さない
-  const editable = !managedByHealth;
-  useAutosave(`${total}|${hasHourly}|${hourly.join(',')}`, dirty && editable, save);
+  // 連携中の今日はヘルスケアが正なので、こちらから保存し返さない。
+  // 時間帯別があるのに合計だけ書き換えると内訳と食い違うので、そのときも触らせない
+  const editable = !managedByHealth && hourly === undefined;
+  useAutosave(total, dirty && editable, save);
 
   // 自動保存は入力が止まってから走るので、待たずに閉じたぶんはここで書き込む
   async function close() {
@@ -268,50 +266,41 @@ function StepsSheet({
   }
 
   return (
-    <Sheet title={`${formatDateShort(date)} の歩数`} onClose={close}>
-      <p className="muted" style={{ marginTop: 0 }}>
-        {managedByHealth
-          ? 'ヘルスケアから自動で取り込んでいます。アプリを開くたびに最新になります。'
-          : 'iPhoneのヘルスケアアプリの歩数を転記してください。時間帯別を入力すると、その合計が1日の合計になります。'}
-      </p>
+    <Sheet title={`${formatDateShort(date)} の歩数`} onClose={close} fit>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="field" style={{ marginBottom: 0 }}>
-          1日の合計歩数{hasHourly && editable && '(時間帯別の合計)'}
+          1日の合計歩数
           <input
             type="number"
             inputMode="numeric"
             min="0"
-            value={hasHourly ? String(hourlySum) : total}
-            disabled={hasHourly || managedByHealth}
+            value={total}
+            disabled={!editable}
             onChange={(e) => setTotal(e.target.value)}
           />
         </label>
         {editable && <AutosaveNote dirty={dirty} saved={entry != null && !dirty} />}
       </div>
+      <p className="muted note">
+        {managedByHealth
+          ? 'ヘルスケアから自動で取り込んでいます。アプリを開くたびに最新になります。'
+          : hourly
+            ? '時間帯別の記録があるので、合計は内訳と揃えたままにしています。'
+            : 'iPhoneのヘルスケアアプリの歩数を転記してください。'}
+      </p>
 
       <h3>時間帯別(1時間ごと)</h3>
-      {/* 内訳がまだ1つも無い日は棒を出さず、入力欄を時刻の隣に寄せて書きやすくする */}
-      <div className={peak > 0 ? 'steps-hours' : 'steps-hours no-bars'}>
-        {hourly.map((v, h) => (
-          <div className="steps-hour" key={h}>
-            <span className="steps-hour-label">{h}時</span>
-            {peak > 0 && (
-              <span className="steps-hour-bar" aria-hidden="true">
-                <span style={{ width: `${(hourlyNums[h] / peak) * 100}%` }} />
-              </span>
-            )}
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              aria-label={`${h}時台の歩数`}
-              value={v}
-              disabled={managedByHealth}
-              onChange={(e) => setHourly((arr) => arr.map((x, i) => (i === h ? e.target.value : x)))}
-            />
-          </div>
-        ))}
-      </div>
+      {hourly ? (
+        <Suspense fallback={<div className="empty-note">読み込み中…</div>}>
+          <HourlyStepsChart hourly={hourly} height={240} />
+        </Suspense>
+      ) : (
+        <div className="empty-note">
+          時間帯別の記録はまだありません。
+          <br />
+          ヘルスケア連携をオンにすると、1時間ごとの歩数も自動で入ります。
+        </div>
+      )}
     </Sheet>
   );
 }
@@ -379,17 +368,20 @@ function NoteSheet({
 function Sheet({
   title,
   onClose,
+  fit = false,
   bodyClass,
   children,
 }: {
   title: string;
   onClose: () => void;
+  /** 中身のぶんだけの高さで開く(メモのように紙面いっぱい使わないシート) */
+  fit?: boolean;
   bodyClass?: string;
   children: ReactNode;
 }) {
   return (
     <div className="modal-backdrop" onClick={() => void onClose()}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className={fit ? 'modal fit' : 'modal'} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>{title}</h2>
           <button className="ghost" onClick={() => void onClose()}>

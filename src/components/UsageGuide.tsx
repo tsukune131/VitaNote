@@ -34,7 +34,8 @@ export function UsageGuide({ onboarding = false }: { onboarding?: boolean }) {
         <div>
           <p className="muted">
             1か月を1日1行で見渡します。歩数とメモはここに書き込みます。
-            歩数をタップすると時間帯別(1時間ごと)の内訳が開きます。
+            歩数をタップすると時間帯別(1時間ごと)のグラフが開きます。
+            メモは先の日付にも書けるので、通院や予定のおぼえ書きにも使えます。
           </p>
         </div>
       </div>

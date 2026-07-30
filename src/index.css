@@ -163,6 +163,14 @@ select {
   font-size: 16px; /* iOSのズーム防止 */
 }
 
+/* 自動で入る値・内訳と揃えている値。読み取り専用だと分かる面にする */
+input:disabled {
+  background: var(--bg);
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted); /* iOSは色を勝手に薄くするので明示する */
+  opacity: 1;
+}
+
 input:focus-visible,
 select:focus-visible,
 button:focus-visible {
@@ -464,6 +472,13 @@ td.calendar-col-day {
   font-weight: 500;
 }
 
+/* 空のメモ欄。「＋メモ」と書くより、記入欄の罫線1本のほうが紙面に馴染む */
+.calendar-note-line {
+  display: block;
+  width: 76%;
+  border-bottom: 1px solid var(--border);
+}
+
 .calendar-blank {
   display: block;
   padding: 10px 6px;
@@ -476,52 +491,6 @@ td.calendar-col-day {
   text-underline-offset: 3px;
 }
 
-/* ---- 時間帯別の歩数(カレンダーのシートの中) ---- */
-
-.steps-hours {
-  display: grid;
-  gap: 4px;
-}
-
-.steps-hour {
-  display: grid;
-  grid-template-columns: 2.8em 1fr 6.4em;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 棒を出さないときは、入力欄を右端に離さず時刻の隣に置く */
-.steps-hours.no-bars .steps-hour {
-  grid-template-columns: 2.8em 6.4em;
-  justify-content: start;
-}
-
-.steps-hour-label {
-  font-size: 11px;
-  color: var(--muted);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.steps-hour-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--grid);
-  overflow: hidden;
-}
-
-.steps-hour-bar > span {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: var(--muted);
-}
-
-.steps-hour input {
-  margin-top: 0;
-  padding: 6px 8px;
-  text-align: right;
-}
 
 /* ---- きょうのしおり(ストリーク+進捗リング) ---- */
 
@@ -1265,6 +1234,12 @@ input[type='search'].food-query {
   flex-direction: column;
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 中身のぶんだけの高さで開くシート。下に空白が広がるのを防ぐ */
+.modal.fit {
+  height: auto;
+  max-height: 88%;
 }
 
 .modal-head {
