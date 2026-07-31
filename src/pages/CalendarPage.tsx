@@ -449,6 +449,13 @@ function Sheet({
   fit?: boolean;
   children: ReactNode;
 }) {
+  // シートを開いている間は後ろの表を動かさない。指で払ったときに背後がスクロールすると、
+  // 閉じたあとに見ていた日から離れてしまう
+  useEffect(() => {
+    document.body.classList.add('sheet-open');
+    return () => document.body.classList.remove('sheet-open');
+  }, []);
+
   return (
     <div className="modal-backdrop" onClick={() => void onClose()}>
       <div className={fit ? 'modal fit' : 'modal'} onClick={(e) => e.stopPropagation()}>

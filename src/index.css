@@ -1207,6 +1207,19 @@ input[type='search'].food-query {
   align-items: flex-end;
   justify-content: center;
   z-index: 100;
+  /* シートの端まで来たスクロールを後ろのページに渡さない */
+  overscroll-behavior: contain;
+  /* 幕の上をなぞってもページは動かない(シートの中は下でautoに戻す) */
+  touch-action: none;
+}
+
+.modal-backdrop .modal {
+  touch-action: auto;
+}
+
+/* シートを開いている間は後ろのページを止める */
+body.sheet-open {
+  overflow: hidden;
 }
 
 .modal {
