@@ -1,7 +1,17 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type NoteEntry, type Profile, type StepEntry } from '../db';
+import { db, type NoteEntry, type Profile, type StepEntry, type WeightEntry } from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
+import { pickReferenceWeight, stepsToKcal, stepsToKm } from '../lib/calc';
 import {
   WEEKDAY_LABELS,
   addMonths,
@@ -14,6 +24,7 @@ import {
   weekdayOf,
 } from '../lib/date';
 import { isHealthSyncEnabled } from '../lib/health';
+import { holidayName } from '../lib/holidays';
 
 // Rechartsはバンドルの大部分を占めるので、歩数シートを開いた時だけ読み込む
 const HourlyStepsChart = lazy(() =>
@@ -49,8 +60,17 @@ export function CalendarPage({ profile }: { profile: Profile }) {
           .where('[profileId+date]')
           .between([profile.id, start], [profile.id, end], true, true)
           .toArray();
-      const [steps, notes] = await Promise.all([range('steps'), range('notes')]);
-      return { steps: steps as StepEntry[], notes: notes as NoteEntry[] };
+      const [steps, notes, weights] = await Promise.all([
+        range('steps'),
+        range('notes'),
+        // 消費カロリーの推定には体重が要る。その月に記録が無い月もあるので全期間から選ぶ
+        db.weights.where('profileId').equals(profile.id).toArray(),
+      ]);
+      return {
+        steps: steps as StepEntry[],
+        notes: notes as NoteEntry[],
+        weights: weights as WeightEntry[],
+      };
     },
     [profile.id, month],
   );
@@ -68,6 +88,26 @@ export function CalendarPage({ profile }: { profile: Profile }) {
   const stepDays = rows.filter((r) => (r.step?.total ?? 0) > 0);
   const stepTotal = stepDays.reduce((s, r) => s + (r.step?.total ?? 0), 0);
   const stepAverage = stepDays.length > 0 ? Math.round(stepTotal / stepDays.length) : 0;
+  const stepKm = stepsToKm(stepTotal);
+  // カロリーは体重で変わるので、日ごとにその時点の体重で足し合わせる。
+  // 体重の記録が1件も無ければ推定できないのでundefined
+  const weights = data?.weights ?? [];
+  const stepKcal =
+    weights.length > 0
+      ? stepDays.reduce((s, r) => {
+          const kg = pickReferenceWeight(weights, r.date);
+          return s + (kg != null ? stepsToKcal(r.step!.total, kg) : 0);
+        }, 0)
+      : undefined;
+
+  // 今月を開いたときは、いちばん見たい今日の行から始める。
+  // まとめのカードは読み込み後に現れて表の位置がずれるので、読み込み後にも合わせ直す
+  const todayRowRef = useRef<HTMLTableRowElement>(null);
+  const loaded = data != null;
+  useEffect(() => {
+    if (month !== thisMonth) return;
+    todayRowRef.current?.scrollIntoView({ block: 'center' });
+  }, [month, thisMonth, loaded]);
 
   function moveMonth(delta: number) {
     setMonth((m) => addMonths(m, delta));
@@ -108,7 +148,30 @@ export function CalendarPage({ profile }: { profile: Profile }) {
               <small> 歩 / {stepDays.length}日</small>
             </div>
           </div>
+          <div className="stat">
+            <div className="label">推定距離</div>
+            <div className="value">
+              {stepKm.toFixed(1)}
+              <small> km</small>
+            </div>
+          </div>
+          <div className="stat">
+            <div className="label">推定消費カロリー</div>
+            <div className="value">
+              {stepKcal != null ? (
+                <>
+                  {Math.round(stepKcal).toLocaleString()}
+                  <small> kcal</small>
+                </>
+              ) : (
+                <small>体重を記録すると出ます</small>
+              )}
+            </div>
+          </div>
         </div>
+        <p className="muted note" style={{ marginBottom: 0 }}>
+          距離は歩幅0.7m、カロリーは体重と歩行3.0METsからのおおよその推定です。
+        </p>
       </div>
       )}
 
@@ -131,6 +194,7 @@ export function CalendarPage({ profile }: { profile: Profile }) {
               <CalendarRow
                 key={r.date}
                 row={r}
+                rowRef={r.date === today ? todayRowRef : undefined}
                 isToday={r.date === today}
                 isFuture={r.date > today}
                 onOpenSteps={() => setStepsDate(r.date)}
@@ -153,28 +217,34 @@ export function CalendarPage({ profile }: { profile: Profile }) {
 
 function CalendarRow({
   row,
+  rowRef,
   isToday,
   isFuture,
   onOpenSteps,
   onOpenNote,
 }: {
   row: DayRow;
+  rowRef?: RefObject<HTMLTableRowElement | null>;
   isToday: boolean;
   isFuture: boolean;
   onOpenSteps: () => void;
   onOpenNote: () => void;
 }) {
   const weekday = weekdayOf(row.date);
+  const holiday = holidayName(row.date);
   const hasHourly = row.step?.hourly?.some((v) => v > 0) ?? false;
-  const rowClass = ['calendar-row', weekday === 0 || weekday === 6 ? 'weekend' : '', isToday ? 'today' : '']
+  // 祝日は日曜と同じ扱い(土日と同じ紙の色にして、平日と見分ける)
+  const isOff = weekday === 0 || weekday === 6 || holiday != null;
+  const rowClass = ['calendar-row', isOff ? 'weekend' : '', isToday ? 'today' : '']
     .filter(Boolean)
     .join(' ');
 
   return (
-    <tr className={rowClass}>
+    <tr className={rowClass} ref={rowRef}>
       <td className="calendar-col-day">
         {dayOfMonthOf(row.date)}
         <span className="calendar-weekday">({WEEKDAY_LABELS[weekday]})</span>
+        {holiday && <span className="calendar-holiday">{holiday}</span>}
       </td>
       <td className="calendar-col-steps">
         {isFuture ? (
@@ -348,9 +418,11 @@ function NoteSheet({
   }
 
   return (
-    <Sheet title={`${formatDateShort(date)} のメモ`} onClose={close} bodyClass="sheet-fill">
+    // 8行ぶんの高さがあれば1日のメモには足りるので、シートは中身の高さで開く
+    <Sheet title={`${formatDateShort(date)} のメモ`} onClose={close} fit>
       <textarea
         className="note-area"
+        rows={8}
         autoFocus
         placeholder="がんばったこと、気づいたこと、明日の自分へのひとことなど"
         value={text}
@@ -369,14 +441,12 @@ function Sheet({
   title,
   onClose,
   fit = false,
-  bodyClass,
   children,
 }: {
   title: string;
   onClose: () => void;
   /** 中身のぶんだけの高さで開く(メモのように紙面いっぱい使わないシート) */
   fit?: boolean;
-  bodyClass?: string;
   children: ReactNode;
 }) {
   return (
@@ -388,7 +458,7 @@ function Sheet({
             閉じる
           </button>
         </div>
-        <div className={bodyClass ? `modal-body ${bodyClass}` : 'modal-body'}>{children}</div>
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );

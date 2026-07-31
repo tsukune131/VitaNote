@@ -86,12 +86,17 @@ export function dailyDeficit(
   return bmrKcal * SEDENTARY_FACTOR + activityKcal - intakeKcal;
 }
 
+/** 歩数からの距離推定(歩幅0.7m) */
+export function stepsToKm(steps: number): number {
+  return steps * 0.0007;
+}
+
 /**
  * 歩数からの消費カロリー推定。
  * 歩幅0.7m・時速4.8km・歩行3.0METsとして kcal = METs × 体重 × 時間 × 1.05
  */
 export function stepsToKcal(steps: number, weightKg: number): number {
-  const km = steps * 0.0007;
+  const km = stepsToKm(steps);
   const hours = km / 4.8;
   return 3.0 * weightKg * hours * 1.05;
 }

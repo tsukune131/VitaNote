@@ -21,7 +21,6 @@ import {
   type ExerciseEntry,
   type HealthMetricEntry,
   type MealEntry,
-  type NoteEntry,
   type Profile,
   type StepEntry,
   type WaterLog,
@@ -130,7 +129,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     async () => {
       const start = `${month}-01`;
       const end = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`;
-      const range = (table: 'weights' | 'meals' | 'waterLogs' | 'steps' | 'exercises' | 'notes') =>
+      const range = (table: 'weights' | 'meals' | 'waterLogs' | 'steps' | 'exercises') =>
         db
           .table(table)
           .where('[profileId+date]')
@@ -142,7 +141,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         waterLogs,
         steps,
         exercises,
-        notes,
         allWeights,
         healthMetrics,
       ] = await Promise.all([
@@ -151,7 +149,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           range('waterLogs'),
           range('steps'),
           range('exercises'),
-          range('notes'),
           db.weights.where('profileId').equals(profile.id).toArray(),
           db.healthMetrics
             .where('[profileId+date]')
@@ -164,7 +161,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         waterLogs: waterLogs as WaterLog[],
         steps: steps as StepEntry[],
         exercises: exercises as ExerciseEntry[],
-        notes: notes as NoteEntry[],
         healthMetrics: healthMetrics as HealthMetricEntry[],
         allWeights,
       };
@@ -674,19 +670,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         </>
       )}
 
-      {(raw?.notes.length ?? 0) > 0 && (
-        <div className="card">
-          <h2>この月のメモ</h2>
-          {[...raw!.notes]
-            .sort((a, b) => a.date.localeCompare(b.date))
-            .map((n) => (
-              <div className="month-note" key={n.id}>
-                <div className="month-note-date">{formatDateShort(n.date)}</div>
-                <p>{n.text}</p>
-              </div>
-            ))}
-        </div>
-      )}
     </div>
   );
 }

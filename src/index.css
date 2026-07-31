@@ -409,7 +409,8 @@ button:disabled {
 }
 
 .calendar-col-day {
-  width: 4.2em;
+  /* 「1(木)」の下に祝日名(最長6文字)が入る幅 */
+  width: 5.4em;
 }
 
 .calendar-col-steps,
@@ -431,7 +432,16 @@ td.calendar-col-day {
   color: var(--muted);
 }
 
-/* 土日は紙の色を残して、平日の行と見分けられるようにする */
+/* 祝日名は日にちの下に小さく添える(行の高さは歩数・メモ欄が決めるので広がらない) */
+.calendar-holiday {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+/* 土日・祝日は紙の色を残して、平日の行と見分けられるようにする */
 .calendar-row.weekend td {
   background: var(--bg);
 }
@@ -1086,31 +1096,6 @@ input[type='search'].food-query {
   margin: 2px 0 0;
 }
 
-/* ---- 月のメモ一覧(巻末) ---- */
-
-.month-note {
-  padding: 8px 0;
-  border-bottom: 1px dashed var(--border);
-}
-
-.month-note:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.month-note-date {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-}
-
-.month-note p {
-  margin: 2px 0 0;
-  font-size: 14px;
-  line-height: 1.8;
-  white-space: pre-wrap;
-}
 
 /* ---- グラフまわり ---- */
 
@@ -1274,18 +1259,6 @@ input[type='search'].food-query {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 14px;
-}
-
-/* メモのシートは1日1ページの紙面として、罫線をシートいっぱいに広げる */
-.modal-body.sheet-fill {
-  display: flex;
-  flex-direction: column;
-  overflow-y: hidden;
-}
-
-.modal-body.sheet-fill .note-area {
-  flex: 1;
-  resize: none;
 }
 
 .empty-note {
