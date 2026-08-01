@@ -652,9 +652,16 @@ td.calendar-col-day {
   vertical-align: 1px;
 }
 
-/* 入力欄を覆って、書こうとしたときだけ購入の話をする */
+/* 入力欄を覆って、書こうとしたときだけ購入の話をする。
+   覆いと中身を同じマス目に重ねて、高い方が高さを決めるようにする。
+   絶対配置だと、スイッチ1行のような低い部品を覆ったときに文言がはみ出す */
 .pro-lock {
-  position: relative;
+  display: grid;
+}
+
+.pro-lock-body,
+.pro-lock-cover {
+  grid-area: 1 / 1;
 }
 
 .pro-lock-body {
@@ -666,23 +673,20 @@ td.calendar-col-day {
 }
 
 .pro-lock-cover {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
   text-align: center;
-  padding: 12px;
+  padding: 8px;
 }
 
-.pro-lock-icon {
-  font-size: 20px;
+.pro-lock-title {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .pro-lock-hint {

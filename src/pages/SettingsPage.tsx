@@ -25,7 +25,7 @@ export function SettingsPage({ profile }: { profile: Profile }) {
           オンにした項目だけ「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
         </p>
         {/* オンにしても書けないのでは戸惑わせる。スイッチごとProの側に置く */}
-        <ProLock>
+        <ProLock label="血圧・血糖値の記録はProの機能です">
           <div className="row" style={{ flexWrap: 'wrap' }}>
             {(
               [

@@ -25,7 +25,14 @@ export function ProBadge() {
  * 無料の人にも過去の記録は見えるようにしてある(体調の記録を人質に取らない)。
  * 新しく書こうとしたときにだけ、ここが購入の案内に差し替わる。
  */
-export function ProLock({ children }: { children: ReactNode }) {
+export function ProLock({
+  children,
+  label = 'ここに書くにはProが要ります',
+}: {
+  children: ReactNode;
+  /** 覆いに出す一文。入力欄以外(設定のスイッチなど)を覆うときに差し替える */
+  label?: string;
+}) {
   const { isPro } = usePro();
   const [open, setOpen] = useState(false);
 
@@ -39,8 +46,9 @@ export function ProLock({ children }: { children: ReactNode }) {
           {children}
         </div>
         <button className="pro-lock-cover" onClick={() => setOpen(true)}>
-          <span className="pro-lock-icon">🔒</span>
-          <span>ここに書くにはProが要ります</span>
+          <span className="pro-lock-title">
+            <span aria-hidden="true">🔒</span> {label}
+          </span>
           <span className="pro-lock-hint">タップして詳しく</span>
         </button>
       </div>
