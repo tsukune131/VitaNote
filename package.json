@@ -28,6 +28,7 @@
     "@capacitor/local-notifications": "^8.2.1",
     "@capacitor/splash-screen": "^8.0.2",
     "@capgo/capacitor-health": "^8.10.0",
+    "@capgo/native-purchases": "^8.6.4",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "react": "^19.2.7",

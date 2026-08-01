@@ -17,6 +17,7 @@ import { matchExercise, searchExercises } from '../lib/exerciseSearch';
 import { untrackedKcal, withItemAdded, withItemRemoved } from '../lib/mealItems';
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
+import { ProBadge, ProLock } from '../components/ProGate';
 import {
   ageAt,
   bmr,
@@ -241,7 +242,11 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
 
   return (
     <div className="card">
-      <h2>血圧・血糖値</h2>
+      <h2>
+        血圧・血糖値
+        <ProBadge />
+      </h2>
+      <ProLock>
       {activeFields.map(([key, label, unit]) => (
         <label className="field" key={key}>
           {label}({unit})
@@ -282,6 +287,7 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
       <div className="row" style={{ marginTop: 4 }}>
         <AutosaveNote dirty={dirty} saved={hasSaved && !dirty} />
       </div>
+      </ProLock>
     </div>
   );
 }

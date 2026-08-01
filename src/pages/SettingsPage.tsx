@@ -4,7 +4,9 @@ import { HealthSyncSettings } from '../components/HealthSyncSettings';
 import { LegalLink } from '../components/LegalLink';
 import { MedicationSettings } from '../components/MedicationSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
+import { ProBadge, ProSheet } from '../components/ProGate';
 import { UsageGuide } from '../components/UsageGuide';
+import { usePro } from '../lib/pro';
 
 /** 記録そのものではなく、アプリの振る舞いを決める設定をまとめたタブ */
 export function SettingsPage({ profile }: { profile: Profile }) {
@@ -12,8 +14,13 @@ export function SettingsPage({ profile }: { profile: Profile }) {
 
   return (
     <div>
+      <ProCard />
+
       <div className="card">
-        <h2>検査値の記録</h2>
+        <h2>
+          検査値の記録
+          <ProBadge />
+        </h2>
         <p className="muted" style={{ marginTop: 0 }}>
           オンにした項目だけ「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
         </p>
@@ -73,6 +80,49 @@ export function SettingsPage({ profile }: { profile: Profile }) {
           <LegalLink doc="terms" />
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Proの状態と、購入・復元の入口。
+ * 復元はApp Storeの審査で必須なので、買ったあとも消さずに残す
+ * (機種変更したときに、ここから引き継げないと詰んでしまう)
+ */
+function ProCard() {
+  const { isPro, price, busy, restore, error } = usePro();
+  const [sheet, setSheet] = useState(false);
+
+  return (
+    <div className="card">
+      <h2>SelfCareNote Pro</h2>
+      {isPro ? (
+        <p className="muted" style={{ marginTop: 0 }}>
+          購入済みです。血液検査と検査値(血圧・血糖値)の記録がお使いいただけます。
+        </p>
+      ) : (
+        <p className="muted" style={{ marginTop: 0 }}>
+          血液検査と検査値(血圧・血糖値)を記録できるようになる、買い切りの追加機能です。
+          {price != null && `${price}(買い切り)。`}
+        </p>
+      )}
+      <div className="row">
+        {!isPro && (
+          <button onClick={() => setSheet(true)} style={{ flex: '0 0 auto' }}>
+            くわしく見る
+          </button>
+        )}
+        <button
+          className="secondary"
+          onClick={() => void restore()}
+          disabled={busy}
+          style={{ flex: '0 0 auto' }}
+        >
+          購入を復元
+        </button>
+      </div>
+      {error && <p className="pro-error">{error}</p>}
+      {sheet && <ProSheet onClose={() => setSheet(false)} />}
     </div>
   );
 }

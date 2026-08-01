@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, BLOOD_TEST_FIELDS, type BloodTestEntry } from '../db';
 import { formatDateShort, todayStr } from '../lib/date';
+import { ProBadge, ProLock } from './ProGate';
+import { usePro } from '../lib/pro';
 
 /**
  * 健康診断・血液検査の結果を登録・編集・削除する(1回=1行)。
  * 日々の記録とは別に、検査を受けた都度「あなた」タブから追加する。
  */
 export function BloodTestManager({ profileId }: { profileId: number }) {
+  const { isPro } = usePro();
   const tests = useLiveQuery(
     async () => {
       const rows = await db.bloodTests.where('profileId').equals(profileId).toArray();
@@ -61,20 +64,27 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
 
   return (
     <div className="card">
-      <h2>血液検査</h2>
+      <h2>
+        血液検査
+        <ProBadge />
+      </h2>
       <p className="muted" style={{ marginTop: 0 }}>
         健康診断や数か月に一度の血液検査の結果を記録します。「ふりかえり」タブで年ごとの表として振り返れます。
       </p>
 
+      {/* 既に記録した結果は、Proでなくても読める・消せる。
+          自分の検査結果を人質に取らないため(編集は書き込みなのでProの側) */}
       {(tests ?? []).length > 0 && (
         <div style={{ marginBottom: 10 }}>
           {tests!.map((t) => (
             <div className="list-item" key={t.id}>
               <span>{formatDateShort(t.date)}</span>
               <span style={{ display: 'flex', gap: 4 }}>
-                <button className="ghost" onClick={() => startEdit(t)}>
-                  編集
-                </button>
+                {isPro && (
+                  <button className="ghost" onClick={() => startEdit(t)}>
+                    編集
+                  </button>
+                )}
                 <button className="danger" onClick={() => void remove(t.id)}>
                   削除
                 </button>
@@ -84,6 +94,7 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
         </div>
       )}
 
+      <ProLock>
       <label className="field">
         検査日
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -121,6 +132,7 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
           </span>
         )}
       </div>
+      </ProLock>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   requestHealthAccess,
 } from './lib/health';
 import { refreshReminders } from './lib/reminderSync';
+import { ProProvider } from './lib/pro';
 import { YouPage } from './pages/YouPage';
 import { RecordPage } from './pages/RecordPage';
 import { CalendarPage } from './pages/CalendarPage';
@@ -122,6 +123,7 @@ export default function App() {
   if (profile === undefined) return null;
 
   return (
+    <ProProvider>
     <div>
       <div className="app-header">
         <h1>SelfCareNote</h1>
@@ -149,5 +151,6 @@ export default function App() {
         ))}
       </nav>
     </div>
+    </ProProvider>
   );
 }
