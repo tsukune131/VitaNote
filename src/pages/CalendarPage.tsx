@@ -25,6 +25,7 @@ import {
 } from '../lib/date';
 import { isHealthSyncEnabled } from '../lib/health';
 import { holidayName } from '../lib/holidays';
+import { useSwipe } from '../lib/swipe';
 
 // Rechartsはバンドルの大部分を占めるので、歩数シートを開いた時だけ読み込む
 const HourlyStepsChart = lazy(() =>
@@ -113,8 +114,11 @@ export function CalendarPage({ profile }: { profile: Profile }) {
     setMonth((m) => addMonths(m, delta));
   }
 
+  // 表を左右に払っても月をめくれる。シートを開いている間は下の表を動かさない
+  const swipe = useSwipe(moveMonth, !stepsDate && !noteDate);
+
   return (
-    <div>
+    <div {...swipe}>
       <div className="date-nav">
         <button onClick={() => moveMonth(-1)} aria-label="前の月">
           ◀
@@ -169,9 +173,6 @@ export function CalendarPage({ profile }: { profile: Profile }) {
             </div>
           </div>
         </div>
-        <p className="muted note" style={{ marginBottom: 0 }}>
-          距離は歩幅0.7m、カロリーは体重と歩行3.0METsからのおおよその推定です。
-        </p>
       </div>
       )}
 
@@ -179,7 +180,6 @@ export function CalendarPage({ profile }: { profile: Profile }) {
         <h2>日ごとの歩数とメモ</h2>
         <p className="muted" style={{ marginTop: 0 }}>
           歩数をタップすると時間帯別(1時間ごと)のグラフ、メモをタップするとその日のメモを書けます。
-          メモは先の日付にも書けるので、通院や予定のおぼえ書きにも使えます。
         </p>
         <table className="calendar-table">
           <thead>

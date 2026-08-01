@@ -4,7 +4,6 @@ import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
 import { ProfileForm } from '../components/ProfileForm';
 import {
-  ACTIVITY_LEVELS,
   ageAt,
   bmi,
   bmiCategory,
@@ -60,9 +59,6 @@ export function YouPage({ profile }: { profile: Profile }) {
 
   const weightKg = latest?.weight?.kg;
   const age = ageAt(profile.birthDate);
-  const activityLabel =
-    ACTIVITY_LEVELS.find((a) => a.value === profile.activityLevel)?.label ??
-    `係数 ${profile.activityLevel}`;
 
   const bmiValue = weightKg != null ? bmi(weightKg, profile.heightCm) : undefined;
   const tdeeValue =
@@ -150,9 +146,6 @@ export function YouPage({ profile }: { profile: Profile }) {
             </div>
           </div>
         </div>
-        <p className="muted" style={{ marginBottom: 0 }}>
-          活動レベル: {activityLabel} ・ {age}歳 ・ 推定消費は基礎代謝(Mifflin-St Jeor式)×活動係数
-        </p>
         {weightKg == null && (
           <p className="muted">「きょう」タブで体重を入力するとBMIなどが表示されます。</p>
         )}

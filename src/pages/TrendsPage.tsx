@@ -45,6 +45,7 @@ import {
   todayStr,
 } from '../lib/date';
 import { useChartTheme, type ChartTheme } from '../lib/chartTheme';
+import { useSwipe } from '../lib/swipe';
 import { HourlyStepsChart } from '../components/HourlyStepsChart';
 
 interface DayRow {
@@ -279,8 +280,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     };
   }
 
+  // グラフの上を左右に払っても、◀▶と同じようにグラフを送れる
+  const swipe = useSwipe(moveChart);
+
   return (
-    <div>
+    <div {...swipe}>
       {chart !== 'bloodtest' && (
         <div className="date-nav">
           <button onClick={() => { setMonth((m) => addMonths(m, -1)); setStepsDate(undefined); }}>◀</button>
