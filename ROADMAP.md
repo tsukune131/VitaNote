@@ -266,10 +266,15 @@ PWAのまま、毎日使って気持ちいいレベルまで磨く。
         無料でも読める・消せる(自分の検査結果を人質に取らない)。編集は書き込み側
   - [ ] ユーザー作業: App Store ConnectでIAPアイテム(非消耗型)を作成 →
         Sandboxテスターで購入・復元を確認 → 家族にはプロモコードを配る
-  - [ ] PWA版(GitHub Pages)の配信停止 (2026-08-01決定) — ブラウザでは課金できず
-        Pro機能の抜け道になるため、iOS版のみのリリースにする。ただしApp Store
-        Connectが到達可能なプライバシーポリシーURLを要求するので、Pagesは
-        法務ページ(+アプリ紹介の1枚ページ)だけ残す
+  - [x] PWA版(GitHub Pages)の配信停止 (2026-08-01) — ブラウザでは課金できず
+        Pro機能の抜け道になるため、iOS版のみのリリースにした。ただしApp Store
+        Connectが到達可能なプライバシーポリシーURLを要求するので、Pagesには
+        紹介1枚(web/index.html)と法務ページだけを置く。deploy.ymlはこの2つを
+        組み立てて配り、型チェックとテストを回すCIも兼ねる。
+        vite-plugin-pwaと `--mode capacitor` の切り替えは不要になったので撤去し、
+        ビルドは `npm run build`(相対パス・SWなし)の1本に統一。
+        紹介ページには古いService Workerを剥がすスクリプトを入れてある
+        (残っているとブラウザ版がキャッシュから開き続けるため)
 - [ ] D-1 ストア素材(スクリーンショット、説明文、キーワード)
       - 訴求軸: 「薬剤師の資格を持つ開発者がつくった」「体重とお薬をこの1冊で」
         「データはあなたのiPhoneの中だけ」「書く楽しさの体重手帳」
@@ -295,6 +300,9 @@ PagesのURLは据え置き)。App Store Connect側のアプリ名は手作業で
 2026-07-25にC-1(Apple Developer登録)・C-2(TestFlight配布パイプライン)完了。
 Bundle ID: **com.tsukune.vitanote**。Macなしで、GitHub Actionsから
 TestFlightへビルドを送れる状態になった(Actions → iOS TestFlight → lane=beta)。
-**次のアクション: C-3 HealthKit連携**(と並行して、TestFlightの内部テストに家族を招待)。
-アプリ: https://tsukune131.github.io/VitaNote/
+フェーズCは実機確認まで完了。2026-08-01にD-0(買い切りPro)のアプリ側を実装し、
+有料App契約とApp内課金アイテムの登録も完了。
+**次のアクション: TestFlightで購入・復元をSandboxで確認 → D-1 ストア素材**。
+紹介ページ: https://tsukune131.github.io/VitaNote/
+(2026-08-01にブラウザ版の配信は終了。同URLは紹介1枚と法務ページだけを配る)
 (Firebaseプロジェクト weightnote-923c3 は未使用のまま残置。再利用しないなら削除してよい)

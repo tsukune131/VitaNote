@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f5f0" />
+    <title>SelfCareNote — 体重とお薬の記録手帳</title>
+    <meta
+      name="description"
+      content="体重・お薬・健診の数値を1冊にまとめる記録手帳。データは端末の中だけに保存されます。"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f5f0;
+        --grid: #e7e9e2;
+        --card: #fffefb;
+        --text: #33362f;
+        --muted: #8b9085;
+        --border: #e0e2da;
+        --accent: #cf4a41;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1f1e1a;
+          --grid: #262520;
+          --card: #292822;
+          --text: #e8e5db;
+          --muted: #9a968a;
+          --border: #3a3830;
+          --accent: #e06a5d;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 32px 16px 64px;
+        background:
+          repeating-linear-gradient(0deg, transparent 0 23px, var(--grid) 23px 24px), var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP',
+          'Yu Gothic UI', sans-serif;
+        line-height: 1.8;
+      }
+      main {
+        max-width: 560px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0 0 4px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 0 0 28px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+      }
+      .card h2 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      a {
+        color: var(--accent);
+      }
+      footer {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>SelfCareNote</h1>
+      <p class="lead">体重とお薬の記録手帳。薬剤師の資格を持つ開発者がつくりました。</p>
+
+      <div class="card">
+        <h2>できること</h2>
+        <ul>
+          <li>体重・体脂肪率・腹囲を1タップで記録</li>
+          <li>朝昼夕と間食のカロリー、飲水量、運動</li>
+          <li>お薬の飲み忘れチェック（食前・食後、週1回・月1回の薬にも対応）</li>
+          <li>歩数はiPhoneのヘルスケアから自動で取り込み</li>
+          <li>血液検査・血圧・血糖値の記録（追加機能）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>データの扱い</h2>
+        <p style="margin: 0">
+          アカウント登録はありません。広告もありません。記録したものはすべてお使いの端末の中だけに保存され、
+          外部のサーバーへ送信されることはありません。
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>ブラウザ版について</h2>
+        <p style="margin: 0">
+          ブラウザ版は提供を終了しました。iPhoneアプリでご利用ください。
+          ブラウザ版に記録したデータをアプリへ引き継ぐことはできません。
+        </p>
+      </div>
+
+      <footer>
+        <a href="./legal/privacy.html">プライバシーポリシー</a> ・
+        <a href="./legal/terms.html">利用規約</a>
+      </footer>
+    </main>
+
+    <script>
+      // ブラウザ版だったころのService Workerが残っていると、
+      // 古いアプリがキャッシュから開き続けてしまう。ここで剥がす
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+        if (window.caches) caches.keys().then((ks) => ks.forEach((k) => caches.delete(k)));
+      }
+    </script>
+  </body>
+</html>

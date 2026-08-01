@@ -1,5 +1,10 @@
 name: Deploy to GitHub Pages
 
+# 公開するのはアプリではなく、紹介1枚と法務ページだけ。
+# ブラウザ版(PWA)は2026-08-01に配信終了したが、App Store Connectが
+# 到達可能なプライバシーポリシーのURLを要求するためPages自体は残す。
+# あわせて、pushのたびに型チェックとテストを回すCIも兼ねる。
+
 on:
   push:
     branches: [main]
@@ -24,14 +29,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - run: npx tsc --noEmit
       - run: npm test
+
+      # 法務ページはアプリに同梱しているものと同じ実体を配る(二重管理を避ける)
+      - name: Assemble site
+        run: |
+          mkdir -p site
+          cp web/index.html site/
+          cp -r public/legal site/legal
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build

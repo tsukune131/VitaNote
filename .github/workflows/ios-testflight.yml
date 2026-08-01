@@ -44,13 +44,13 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
-      # capacitor モードは相対パス配信 + Service Worker なし。
-      # 通常の build は GitHub Pages のサブパス /VitaNote/ 前提なので
-      # WKWebView から読むと全アセットが 404 になり真っ白になる
+      # ビルドは相対パス配信 + Service Worker なしの1種類だけ。
+      # (ブラウザ版をやめるまでは、GitHub Pages 用のサブパス build と
+      #  取り違えると WKWebView で全アセットが 404 になる罠があった)
       - name: Build web assets
         run: |
           npm ci
-          npm run build:capacitor
+          npm run build
 
       - name: Sync Capacitor iOS project
         run: npx cap sync ios
