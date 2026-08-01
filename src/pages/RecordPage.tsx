@@ -40,7 +40,6 @@ import {
 import { isHealthSyncEnabled, writeBodyMetricsToHealth } from '../lib/health';
 import { tapFeedback } from '../lib/nativeUi';
 import { refreshReminders } from '../lib/reminderSync';
-import { tipForDate } from '../lib/tips';
 
 export function RecordPage({ profile }: { profile: Profile }) {
   const [date, setDate] = useState(todayStr());
@@ -49,11 +48,6 @@ export function RecordPage({ profile }: { profile: Profile }) {
     <div>
       <StreakSummary profile={profile} />
       <TodayPrescription profile={profile} />
-
-      <div className="tip-card">
-        <span className="tip-label">きょうのひとこと</span>
-        <p>{tipForDate(todayStr(), profile.useMedication ?? false)}</p>
-      </div>
 
       <div className="date-nav">
         <button onClick={() => setDate((d) => addDays(d, -1))}>◀</button>

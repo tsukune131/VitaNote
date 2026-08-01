@@ -102,12 +102,13 @@ export function CalendarPage({ profile }: { profile: Profile }) {
       : undefined;
 
   // 今月を開いたときは、いちばん見たい今日の行から始める。
-  // まとめのカードは読み込み後に現れて表の位置がずれるので、読み込み後にも合わせ直す
+  // まとめのカードは読み込み後に現れて表の位置がずれるので、読み込み後にも合わせ直す。
+  // ほかの月では、前の月を見ていた位置のまま途中に放り出されないよう1日から始める
   const todayRowRef = useRef<HTMLTableRowElement>(null);
   const loaded = data != null;
   useEffect(() => {
-    if (month !== thisMonth) return;
-    todayRowRef.current?.scrollIntoView({ block: 'center' });
+    if (month === thisMonth) todayRowRef.current?.scrollIntoView({ block: 'center' });
+    else window.scrollTo({ top: 0 });
   }, [month, thisMonth, loaded]);
 
   function moveMonth(delta: number) {
