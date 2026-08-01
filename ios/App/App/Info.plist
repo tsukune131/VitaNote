@@ -30,7 +30,7 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<!-- 暗号化は一切使っていない(通信なし・データは端末内に平文保存)ため、
 	     アップロードのたびに輸出コンプライアンスを聞かれないようにする。
-	     Sentryを有効化するなど外部通信を足したら申告し直しが必要 -->
+	     エラー監視のような外部通信を足したら申告し直しが必要 -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSHealthShareUsageDescription</key>
