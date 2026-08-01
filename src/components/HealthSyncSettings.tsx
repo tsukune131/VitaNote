@@ -38,7 +38,7 @@ export function HealthSyncSettings({ profile }: { profile: Profile }) {
       const { ok, daysWithData, daysWritten } = await importStepsFromHealth(profile.id);
       if (!ok || daysWithData === 0) {
         setMessage(
-          '歩数を取り込めませんでした。iPhoneの「設定」→「プライバシーとセキュリティ」→「ヘルスケア」→「VitaNote」で、歩数の読み取りが許可されているか確認してください。',
+          '歩数を取り込めませんでした。iPhoneの「設定」→「プライバシーとセキュリティ」→「ヘルスケア」→「SelfCareNote」で、歩数の読み取りが許可されているか確認してください。',
         );
       } else if (daysWritten > 0) {
         setMessage(`${daysWritten}日ぶんの歩数を取り込みました。`);

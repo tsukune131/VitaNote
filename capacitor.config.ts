@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.tsukune.vitanote',
-  appName: 'VitaNote',
+  appName: 'SelfCareNote',
   webDir: 'dist',
   plugins: {
     SplashScreen: {

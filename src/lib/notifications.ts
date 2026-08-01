@@ -140,7 +140,7 @@ export async function syncReminders(
         (at, week) => {
           notifications.push({
             id: WAIST_ID_BASE + week,
-            title: 'VitaNote',
+            title: 'SelfCareNote',
             body: '今週の腹囲を記録しましょう',
             schedule: { at, allowWhileIdle: true },
           });
@@ -162,7 +162,7 @@ export async function syncReminders(
           if (at <= now) return; // 過ぎた時刻には積めない
           notifications.push({
             id: weightId(day, i),
-            title: 'VitaNote',
+            title: 'SelfCareNote',
             body: i === 0 ? 'きょうの体重を書き込みましょう' : 'きょうの体重がまだ書かれていません',
             schedule: { at, allowWhileIdle: true },
           });

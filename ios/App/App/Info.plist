@@ -13,7 +13,7 @@
 		<string>ja</string>
 	</array>
 	<key>CFBundleDisplayName</key>
-        <string>VitaNote</string>
+        <string>SelfCareNote</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

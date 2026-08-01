@@ -78,7 +78,7 @@ export function NotificationSettings({ profile }: { profile: Profile }) {
       )}
       {denied && (
         <p className="muted" style={{ marginTop: 0 }}>
-          通知が許可されていません。iPhoneの「設定」→「通知」→「VitaNote」から許可してください。
+          通知が許可されていません。iPhoneの「設定」→「通知」→「SelfCareNote」から許可してください。
         </p>
       )}
 

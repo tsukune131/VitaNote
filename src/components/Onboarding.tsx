@@ -31,7 +31,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   return (
     <div>
       <div className="app-header">
-        <h1>VitaNote</h1>
+        <h1>SelfCareNote</h1>
       </div>
 
       <div className="onboarding-dots">

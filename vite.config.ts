@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'VitaNote',
-        short_name: 'VitaNote',
+        name: 'SelfCareNote',
+        short_name: 'SelfCareNote',
         description: '体重・血圧・血糖値・服薬などを毎日書き込む健康手帳アプリ',
         lang: 'ja',
         display: 'standalone',
