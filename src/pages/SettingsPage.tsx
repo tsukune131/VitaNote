@@ -4,7 +4,7 @@ import { HealthSyncSettings } from '../components/HealthSyncSettings';
 import { LegalLink } from '../components/LegalLink';
 import { MedicationSettings } from '../components/MedicationSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
-import { ProBadge, ProSheet } from '../components/ProGate';
+import { ProBadge, ProLock, ProSheet } from '../components/ProGate';
 import { UsageGuide } from '../components/UsageGuide';
 import { usePro } from '../lib/pro';
 
@@ -24,29 +24,32 @@ export function SettingsPage({ profile }: { profile: Profile }) {
         <p className="muted" style={{ marginTop: 0 }}>
           オンにした項目だけ「きょう」タブに入力欄が出て、「ふりかえり」タブで推移を確認できます。
         </p>
-        <div className="row" style={{ flexWrap: 'wrap' }}>
-          {(
-            [
-              ['trackBloodPressure', '血圧'],
-              ['trackGlucose', '血糖値'],
-            ] as const satisfies readonly (readonly [
-              'trackBloodPressure' | 'trackGlucose',
-              string,
-            ])[]
-          ).map(([key, label]) => (
-            <label className="checkbox-inline" key={key}>
-              <input
-                type="checkbox"
-                checked={profile[key] ?? false}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  void db.profiles.update(profile.id, { [key]: checked } as Partial<Profile>);
-                }}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
+        {/* オンにしても書けないのでは戸惑わせる。スイッチごとProの側に置く */}
+        <ProLock>
+          <div className="row" style={{ flexWrap: 'wrap' }}>
+            {(
+              [
+                ['trackBloodPressure', '血圧'],
+                ['trackGlucose', '血糖値'],
+              ] as const satisfies readonly (readonly [
+                'trackBloodPressure' | 'trackGlucose',
+                string,
+              ])[]
+            ).map(([key, label]) => (
+              <label className="checkbox-inline" key={key}>
+                <input
+                  type="checkbox"
+                  checked={profile[key] ?? false}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    void db.profiles.update(profile.id, { [key]: checked } as Partial<Profile>);
+                  }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </ProLock>
       </div>
 
       <MedicationSettings profile={profile} />
