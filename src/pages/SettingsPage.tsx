@@ -93,7 +93,7 @@ export function SettingsPage({ profile }: { profile: Profile }) {
  * (機種変更したときに、ここから引き継げないと詰んでしまう)
  */
 function ProCard() {
-  const { isPro, price, busy, restore, error } = usePro();
+  const { isPro, price, storefront, busy, restore, error } = usePro();
   const [sheet, setSheet] = useState(false);
 
   return (
@@ -125,6 +125,13 @@ function ProCard() {
         </button>
       </div>
       {error && <p className="pro-error">{error}</p>}
+      {/* 切り分け用(一時): 通貨がおかしいときにStoreKitがどの国のストアを
+          見ているか確かめる。原因が分かったらこの3行を消す */}
+      {storefront != null && (
+        <p className="muted" style={{ fontSize: 11, margin: '8px 0 0' }}>
+          ストアフロント: {storefront} / 価格: {price ?? '取得できず'}
+        </p>
+      )}
       {sheet && <ProSheet onClose={() => setSheet(false)} />}
     </div>
   );

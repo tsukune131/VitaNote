@@ -23,6 +23,12 @@ export interface ProState {
   isPro: boolean;
   /** 端末の通貨で整形済みの価格(取れるまでundefined) */
   price?: string;
+  /**
+   * StoreKitが見ているストアの国コード(JP/USなど)。
+   * 通貨がおかしいときの切り分け用に出しているだけの一時的なもの。
+   * 審査提出前に、これを表示している設定タブの1行ごと消す
+   */
+  storefront?: string;
   /** 購入・復元の通信中 */
   busy: boolean;
   /** 直前の操作が失敗したときの、そのまま出せる日本語 */
@@ -44,6 +50,7 @@ const ProContext = createContext<ProState | undefined>(undefined);
 export function ProProvider({ children }: { children: ReactNode }) {
   const [isPro, setIsPro] = useState(false);
   const [price, setPrice] = useState<string>();
+  const [storefront, setStorefront] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   // 開発中のホットリロードや前面復帰の連打で二重に走らせない
@@ -87,6 +94,14 @@ export function ProProvider({ children }: { children: ReactNode }) {
   // 変更前の値を掴んだまま古い通貨で表示し続けてしまう)
   const refreshPrice = useCallback(async () => {
     if (!isNativeApp()) return;
+    // 切り分け用(一時): 価格が古い通貨のままのとき、StoreKitがどの国の
+    // ストアを見ているかを確かめる。原因が分かったら消す
+    try {
+      const { countryCode } = await NativePurchases.getStorefront();
+      setStorefront(countryCode);
+    } catch {
+      setStorefront(undefined);
+    }
     try {
       const { product } = await NativePurchases.getProduct({
         productIdentifier: PRO_PRODUCT_ID,
@@ -163,8 +178,8 @@ export function ProProvider({ children }: { children: ReactNode }) {
   }, [remember]);
 
   const value = useMemo<ProState>(
-    () => ({ isPro, price, busy, error, purchase, restore }),
-    [isPro, price, busy, error, purchase, restore],
+    () => ({ isPro, price, storefront, busy, error, purchase, restore }),
+    [isPro, price, storefront, busy, error, purchase, restore],
   );
 
   return <ProContext.Provider value={value}>{children}</ProContext.Provider>;
