@@ -81,31 +81,39 @@ export function ProProvider({ children }: { children: ReactNode }) {
     })();
   }, [refresh]);
 
-  // 価格はApp Store側の設定なので、こちらに書かずに毎回聞く
-  useEffect(() => {
+  // 価格はApp Store側の設定なので、こちらに書かずに聞く。
+  // 通貨や金額はApple ID側の国・地域や価格改定で変わりうるので、
+  // 起動時だけでなく前面復帰のたびに取り直す(取りっぱなしにすると、
+  // 変更前の値を掴んだまま古い通貨で表示し続けてしまう)
+  const refreshPrice = useCallback(async () => {
     if (!isNativeApp()) return;
-    void (async () => {
-      try {
-        const { product } = await NativePurchases.getProduct({
-          productIdentifier: PRO_PRODUCT_ID,
-          productType: PURCHASE_TYPE.INAPP,
-        });
-        setPrice(product.priceString);
-      } catch {
-        // 取れなければ価格を出さない(審査では価格表示が要るので、
-        // 購入ボタンは価格が取れたときだけ押せるようにしている)
-      }
-    })();
+    try {
+      const { product } = await NativePurchases.getProduct({
+        productIdentifier: PRO_PRODUCT_ID,
+        productType: PURCHASE_TYPE.INAPP,
+      });
+      setPrice(product.priceString);
+    } catch {
+      // 取れなければ価格を出さない(審査では価格表示が要るので、
+      // 購入ボタンは価格が取れたときだけ押せるようにしている)
+    }
   }, []);
 
-  // 他の端末で買った場合や、家族共有で降りてきた場合に追いつく
+  useEffect(() => {
+    void refreshPrice();
+  }, [refreshPrice]);
+
+  // 他の端末で買った場合や、家族共有で降りてきた場合に追いつく。
+  // 価格も同じ機会に取り直す
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState !== 'visible') return;
+      void refresh();
+      void refreshPrice();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refresh]);
+  }, [refresh, refreshPrice]);
 
   const purchase = useCallback(async () => {
     if (!isNativeApp()) {
