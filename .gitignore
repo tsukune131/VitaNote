@@ -50,3 +50,6 @@ fastlane/report.xml
 fastlane/README.md
 fastlane/test_output
 Gemfile.lock
+
+# ストア画像の元にした実機のスクリーンショット(手元のみ)
+photo/
