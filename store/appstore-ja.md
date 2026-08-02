@@ -197,6 +197,64 @@ App Store の製品ページに「Appのプライバシー」として表示さ�
 
 ---
 
+## App内課金アイテムの「審査に関する情報」
+
+IAPアイテム(SelfCareNote Pro)ごとに求められる欄。**ユーザーには表示されない。**
+審査担当者が購入画面に辿り着くためのもの。
+
+### スクリーンショット(必須・1枚)
+
+購入シートの実機スクリーンショットを1枚。加工は不要で、ストア用のような
+寸法の縛りもない(640x920以上あればよい)。
+
+撮る画面: 「設定」タブ →「SelfCareNote Pro」→「くわしく見る」
+写っていてほしいもの: **価格の入った購入ボタン**と**「購入を復元」**。
+
+> 価格が ¥500 と出ているビルドで撮ること。ドル表示のまま添付すると、
+> 日本の価格設定と食い違って見え、余計な確認を招く。
+
+### レビューメモ(任意だが書いておく)
+
+```
+買い切り(非消耗型)の追加機能です。アカウント登録は不要で、起動後すぐに
+購入画面をご確認いただけます。
+
+購入画面までの経路:
+「設定」タブ →「SelfCareNote Pro」→「くわしく見る」
+
+上記のほか、「あなた」タブの血液検査カード、または「きょう」タブの
+血圧・血糖値カードの入力欄をタップしても同じ購入画面が開きます。
+
+購入の復元: 「設定」タブ →「SelfCareNote Pro」→「購入を復元」
+
+購入すると、血液検査の結果と血圧・血糖値の記録ができるようになります。
+未購入の状態でも、過去に記録した結果の閲覧は可能です。
+```
+
+英語で求められた場合:
+
+```
+A one-time, non-consumable unlock. No account or sign-in is required.
+
+To reach the purchase screen:
+Settings tab ("設定") → "SelfCareNote Pro" → "くわしく見る" (Learn more)
+
+The same screen also opens by tapping the input area of the blood test
+card in the "あなた" (You) tab, or the blood pressure / glucose card in
+the "きょう" (Today) tab.
+
+Restore: Settings tab → "SelfCareNote Pro" → "購入を復元" (Restore).
+
+The purchase enables recording of blood test results and blood pressure
+/ glucose readings. Results recorded earlier remain readable without it.
+```
+
+> **初回の提出では、IAPアイテムをアプリのバージョンに紐づけて一緒に審査に出す。**
+> バージョンのページに「App内課金」を選ぶ欄があり、ここで選んでおかないと
+> アイテムだけが審査されないまま残る。
+
+---
+
 ## 審査メモ(App Review に添える情報)
 
 ```
