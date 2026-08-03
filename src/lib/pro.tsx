@@ -18,6 +18,21 @@ export const PRO_PRODUCT_ID = 'com.tsukune.vitanote.pro';
 /** 前回わかっているPro状態。機内モードで起動しても記録が読めるように残す */
 const CACHE_KEY = 'proUnlocked';
 
+/**
+ * 【一時的・リリース前に必ず null に戻すこと】
+ *
+ * 購入シートの価格表示を上書きする。App内課金の「審査に関する情報」に添える
+ * スクリーンショットを撮るためだけのもの。
+ *
+ * あの画像には日本の価格(¥500)が写っている必要があるが、価格はStoreKitが
+ * Apple IDの国・地域を見て返すので、手元の端末が米国アカウントだと$2.99に
+ * なってしまい、日本の価格設定と食い違って見える。撮影用にここで差し替える。
+ *
+ * 上書きするのは表示だけで、実際の課金額はStoreKit側の値のまま。この状態で
+ * 購入すると米国アカウントには$2.99が請求される。撮ったら null に戻す。
+ */
+const PRICE_OVERRIDE: string | null = '¥500';
+
 export interface ProState {
   /** 検査値・血液検査を書けるか */
   isPro: boolean;
@@ -86,6 +101,11 @@ export function ProProvider({ children }: { children: ReactNode }) {
   // 起動時だけでなく前面復帰のたびに取り直す(取りっぱなしにすると、
   // 変更前の値を掴んだまま古い通貨で表示し続けてしまう)
   const refreshPrice = useCallback(async () => {
+    if (PRICE_OVERRIDE) {
+      // 審査用スクリーンショットの撮影中。StoreKitには聞かない
+      setPrice(PRICE_OVERRIDE);
+      return;
+    }
     if (!isNativeApp()) return;
     try {
       const { product } = await NativePurchases.getProduct({
