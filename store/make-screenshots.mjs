@@ -19,8 +19,21 @@
 import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
 
-const W = 1320;
-const H = 2868;
+/**
+ * 出力する紙面。6.9インチだけが必須で、6.5インチは任意。
+ * 6.5インチの枠にも出したいときのために両方作る。
+ *
+ * 6.5インチには 1242x2688 と 1284x2778 の2つが認められているが、
+ * どちらか一方を5枚揃えればよい。縦横比が6.9インチに近い後者を使う
+ * (帯とスクリーンショットの比率をそのまま縮められる)。
+ */
+const SIZES = [
+  { W: 1320, H: 2868, dir: 'store/screenshots' },
+  { W: 1284, H: 2778, dir: 'store/screenshots-65' },
+];
+
+/** 版面の基準。ここからの比で他の寸法の余白と文字を決める */
+const BASE_W = 1320;
 
 const PAPER = '#f5f5f0';
 const GRID = '#e7e9e2';
@@ -32,10 +45,10 @@ const BORDER = '#e0e2da';
 
 const FONT = 'Yu Gothic UI, Meiryo, Hiragino Sans, sans-serif';
 
-/** 帯の高さ。スクリーンショットはこの下に置く */
-const BAND = 430;
+/** 帯の高さ(基準の版面での値)。スクリーンショットはこの下に置く */
+const BASE_BAND = 430;
 /** 載せるスクリーンショットの幅(元は1206px。少し縮めて余白を作る) */
-const SHOT_W = 1080;
+const BASE_SHOT_W = 1080;
 
 /**
  * top/bottom は元画像の高さに対する割合で、切り出す範囲。
@@ -55,7 +68,7 @@ const SHOTS = [
 const DEFAULT_TOP = 0.045;
 
 /** 方眼紙の下地。24pxごとの罫線はアプリの紙面と同じ間隔 */
-function background() {
+function background(W, H) {
   const lines = [];
   for (let x = 0; x < W; x += 24) {
     lines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${GRID}" stroke-width="1"/>`);
@@ -72,14 +85,17 @@ function background() {
 }
 
 /** 上の帯: 見出し・小さな添え書き・朱色の下線 */
-function caption(title, sub) {
+function caption(title, sub, W, BAND) {
+  // 版面が小さいほうでは、余白も文字も同じ比で縮める
+  const k = W / BASE_W;
+  const r = (n) => Math.round(n * k);
   return Buffer.from(
     `<svg width="${W}" height="${BAND}" xmlns="http://www.w3.org/2000/svg">
-      <text x="${W / 2}" y="196" font-family="${FONT}" font-size="70" font-weight="700"
+      <text x="${W / 2}" y="${r(196)}" font-family="${FONT}" font-size="${r(70)}" font-weight="700"
             fill="${INK}" text-anchor="middle">${esc(title)}</text>
-      <line x1="${W / 2 - 60}" y1="238" x2="${W / 2 + 60}" y2="238"
-            stroke="${ACCENT}" stroke-width="5" stroke-linecap="round"/>
-      <text x="${W / 2}" y="308" font-family="${FONT}" font-size="38"
+      <line x1="${W / 2 - r(60)}" y1="${r(238)}" x2="${W / 2 + r(60)}" y2="${r(238)}"
+            stroke="${ACCENT}" stroke-width="${r(5)}" stroke-linecap="round"/>
+      <text x="${W / 2}" y="${r(308)}" font-family="${FONT}" font-size="${r(38)}"
             fill="${MUTED}" text-anchor="middle">${esc(sub)}</text>
     </svg>`,
   );
@@ -108,51 +124,57 @@ function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-await mkdir('store/screenshots', { recursive: true });
+for (const { W, H, dir } of SIZES) {
+  await mkdir(dir, { recursive: true });
 
-for (const [i, shot] of SHOTS.entries()) {
-  const meta = await sharp(`photo/${shot.file}`).metadata();
+  const BAND = Math.round((BASE_BAND * W) / BASE_W);
+  const SHOT_W = Math.round((BASE_SHOT_W * W) / BASE_W);
 
-  // 元画像のうち使う範囲を切り出してから、幅を揃えて縮める
-  const cutTop = Math.round(meta.height * (shot.top ?? DEFAULT_TOP));
-  const cutBottom = Math.round(meta.height * (shot.bottom ?? 1));
-  const region = { left: 0, top: cutTop, width: meta.width, height: cutBottom - cutTop };
+  for (const [i, shot] of SHOTS.entries()) {
+    const meta = await sharp(`photo/${shot.file}`).metadata();
 
-  const resized = await sharp(`photo/${shot.file}`)
-    .extract(region)
-    .resize(SHOT_W)
-    .png()
-    .toBuffer();
+    // 元画像のうち使う範囲を切り出してから、幅を揃えて縮める
+    const cutTop = Math.round(meta.height * (shot.top ?? DEFAULT_TOP));
+    const cutBottom = Math.round(meta.height * (shot.bottom ?? 1));
+    const region = { left: 0, top: cutTop, width: meta.width, height: cutBottom - cutTop };
 
-  const rm = await sharp(resized).metadata();
-  // 帯の下に入りきらないときは下端で切る(紙の外へ流れる見せ方)
-  const area = H - BAND - 90;
-  const visibleH = Math.min(rm.height, area);
-  const body =
-    visibleH === rm.height
-      ? resized
-      : await sharp(resized).extract({ left: 0, top: 0, width: SHOT_W, height: visibleH }).png().toBuffer();
+    const resized = await sharp(`photo/${shot.file}`)
+      .extract(region)
+      .resize(SHOT_W)
+      .png()
+      .toBuffer();
 
-  const card = await sharp(body)
-    .composite([
-      { input: roundedMask(SHOT_W, visibleH), blend: 'dest-in' },
-      { input: frame(SHOT_W, visibleH), blend: 'over' },
-    ])
-    .png()
-    .toBuffer();
+    const rm = await sharp(resized).metadata();
+    // 帯の下に入りきらないときは下端で切る(紙の外へ流れる見せ方)
+    const area = H - BAND - Math.round((90 * W) / BASE_W);
+    const visibleH = Math.min(rm.height, area);
+    const body =
+      visibleH === rm.height
+        ? resized
+        : await sharp(resized).extract({ left: 0, top: 0, width: SHOT_W, height: visibleH }).png().toBuffer();
 
-  // 縦は帯の下の余白に対して中央。短い画面でも据わりが悪くならない
-  const top = BAND + Math.round((area - visibleH) / 2);
+    const card = await sharp(body)
+      .composite([
+        { input: roundedMask(SHOT_W, visibleH), blend: 'dest-in' },
+        { input: frame(SHOT_W, visibleH), blend: 'over' },
+      ])
+      .png()
+      .toBuffer();
 
-  const out = `store/screenshots/${String(i + 1).padStart(2, '0')}-${shot.file.replace(/\.PNG$/i, '')}.png`;
-  await sharp(background())
-    .composite([
-      { input: caption(shot.title, shot.sub), top: 0, left: 0 },
-      { input: card, top, left: Math.round((W - SHOT_W) / 2) },
-    ])
-    .png()
-    .toFile(out);
+    // 縦は帯の下の余白に対して中央。短い画面でも据わりが悪くならない
+    const top = BAND + Math.round((area - visibleH) / 2);
 
-  const check = await sharp(out).metadata();
-  console.log(`${out}  ${check.width}x${check.height}  ${shot.title}`);
+    const out = `${dir}/${String(i + 1).padStart(2, '0')}-${shot.file.replace(/\.PNG$/i, '')}.png`;
+    await sharp(background(W, H))
+      .composite([
+        { input: caption(shot.title, shot.sub, W, BAND), top: 0, left: 0 },
+        { input: card, top, left: Math.round((W - SHOT_W) / 2) },
+      ])
+      .removeAlpha() // 3チャンネル(RGB)で書き出す。アルファ付きは弾かれる
+      .png()
+      .toFile(out);
+
+    const check = await sharp(out).metadata();
+    console.log(`${out}  ${check.width}x${check.height}  ${check.channels}ch  ${shot.title}`);
+  }
 }
