@@ -74,7 +74,9 @@ export function StreakSummary({ profile }: { profile: Profile }) {
   const message = !showRequired
     ? '「あなた」タブで目標を設定すると進捗が見えます'
     : todayDeficit == null
-      ? '食事と体重を記録すると貯金が見えます'
+      ? profile.heightCm != null && profile.birthDate && profile.sex
+        ? '食事と体重を記録すると貯金が見えます'
+        : '「あなた」タブで身長・生年月日・性別(任意)を入れると貯金が見えます'
       : todayDeficit >= required
         ? 'きょうの目標を達成しました!'
         : `目標まであと ${Math.round(required - todayDeficit).toLocaleString()} kcal`;

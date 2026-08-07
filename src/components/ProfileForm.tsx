@@ -9,21 +9,19 @@ interface Props {
 
 export function ProfileForm({ profile, onSaved }: Props) {
   const [name, setName] = useState(profile?.name ?? '');
-  const [heightCm, setHeightCm] = useState(profile ? String(profile.heightCm) : '');
+  const [heightCm, setHeightCm] = useState(profile?.heightCm != null ? String(profile.heightCm) : '');
   const [birthDate, setBirthDate] = useState(profile?.birthDate ?? '');
-  const [sex, setSex] = useState<Sex>(profile?.sex ?? 'male');
+  const [sex, setSex] = useState<Sex | ''>(profile?.sex ?? '');
   const [activityLevel, setActivityLevel] = useState(profile?.activityLevel ?? 1.375);
-
-  const valid = name.trim() !== '' && Number(heightCm) > 0 && birthDate !== '';
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!valid) return;
+    // すべて任意入力。空欄のまま保存でき、入力があった項目だけ推定計算に使う
     const data = {
-      name: name.trim(),
-      heightCm: Number(heightCm),
-      birthDate,
-      sex,
+      name: name.trim() || undefined,
+      heightCm: Number(heightCm) > 0 ? Number(heightCm) : undefined,
+      birthDate: birthDate || undefined,
+      sex: sex || undefined,
       activityLevel,
     };
     let id: number;
@@ -39,12 +37,12 @@ export function ProfileForm({ profile, onSaved }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <label className="field">
-        名前
+        ニックネーム(任意)
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
       </label>
       <div className="row">
         <label className="field">
-          身長(cm)
+          身長(cm・任意)
           <input
             type="number"
             inputMode="decimal"
@@ -55,14 +53,15 @@ export function ProfileForm({ profile, onSaved }: Props) {
           />
         </label>
         <label className="field field-fixed-date">
-          生年月日
+          生年月日(任意)
           <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
         </label>
       </div>
       <div className="row">
         <label className="field">
-          性別(計算用)
-          <select value={sex} onChange={(e) => setSex(e.target.value as Sex)}>
+          性別(任意)
+          <select value={sex} onChange={(e) => setSex(e.target.value as Sex | '')}>
+            <option value="">未回答</option>
             <option value="male">男性</option>
             <option value="female">女性</option>
           </select>
@@ -81,9 +80,7 @@ export function ProfileForm({ profile, onSaved }: Props) {
           </select>
         </label>
       </div>
-      <button type="submit" disabled={!valid}>
-        保存
-      </button>
+      <button type="submit">保存</button>
     </form>
   );
 }

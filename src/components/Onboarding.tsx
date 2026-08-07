@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { db, setActiveProfileId } from '../db';
+import { db, setActiveProfileId, type Profile } from '../db';
 import { LegalLink } from './LegalLink';
 import { ProfileForm } from './ProfileForm';
 import { UsageGuide } from './UsageGuide';
@@ -14,6 +14,18 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [targetWeight, setTargetWeight] = useState('');
   const [targetFat, setTargetFat] = useState('');
   const [targetDate, setTargetDate] = useState('');
+
+  async function continueWithProfile(id: number) {
+    await setActiveProfileId(id);
+    setProfileId(id);
+    setStep('goal');
+  }
+
+  /** 何も入力しない人のために、活動レベルだけの空のプロフィールを作って進む */
+  async function skipProfile() {
+    const id = await db.profiles.add({ activityLevel: 1.375 } as Profile);
+    await continueWithProfile(id);
+  }
 
   async function saveGoalAndContinue() {
     const w = Number(targetWeight);
@@ -67,18 +79,17 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
 
       {step === 'profile' && (
         <div className="card">
-          <h2>あなたについて教えてください</h2>
+          <h2>あなたについて(すべて任意)</h2>
           <p className="muted">
-            身長・生年月日・性別・活動レベルから、1日の推定消費カロリーを計算します。
-            この計算をもとに「きょうの処方箋」が、目標までに必要な歩数やご飯の量を教えてくれます。
+            入力しなくても、体重・食事・お薬などの記録はすべてお使いいただけます。
+            身長・生年月日・性別・活動レベルを入れると、1日の推定消費カロリーを計算でき、
+            「きょうの処方箋」が目標までに必要な歩数やご飯の量を教えてくれます。
+            あとから「あなた」タブでいつでも入力・削除できます。
           </p>
-          <ProfileForm
-            onSaved={async (id) => {
-              await setActiveProfileId(id);
-              setProfileId(id);
-              setStep('goal');
-            }}
-          />
+          <ProfileForm onSaved={(id) => void continueWithProfile(id)} />
+          <button className="secondary" onClick={() => void skipProfile()}>
+            入力せずにつづける
+          </button>
         </div>
       )}
 

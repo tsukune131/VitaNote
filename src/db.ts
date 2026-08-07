@@ -2,12 +2,17 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type Sex = 'male' | 'female';
 
+/**
+ * プロフィール。記録そのものには個人情報を必要としないため、
+ * 名前・身長・生年月日・性別はすべて任意。
+ * 入力があった項目だけ、基礎代謝やBMIといった推定計算に使う。
+ */
 export interface Profile {
   id: number;
-  name: string;
-  heightCm: number;
-  birthDate: string; // YYYY-MM-DD
-  sex: Sex;
+  name?: string;
+  heightCm?: number;
+  birthDate?: string; // YYYY-MM-DD
+  sex?: Sex;
   activityLevel: number;
   targetWeightKg?: number;
   targetFatPct?: number; // 目標体脂肪率(%)

@@ -19,12 +19,11 @@ import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
 import { ProBadge, ProLock } from '../components/ProGate';
 import {
-  ageAt,
-  bmr,
   dailyDeficit,
   daysUntil,
   metsToKcal,
   pickReferenceWeight,
+  profileBmr,
   requiredDailyKcal,
   stepsToKcal,
   totalKcalToGoal,
@@ -1097,15 +1096,10 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
   const exerciseKcal = exercises.reduce((s, e) => s + e.kcal, 0);
   const burn = stepKcal + exerciseKcal;
 
-  // カロリー貯金 = 基礎代謝×1.2 + 活動消費 − 摂取(食事と体重の記録がある日のみ)
-  const deficit =
-    meal != null && refWeight != null
-      ? dailyDeficit(
-          bmr(refWeight, profile.heightCm, ageAt(profile.birthDate), profile.sex),
-          burn,
-          intake,
-        )
-      : undefined;
+  // カロリー貯金 = 基礎代謝×1.2 + 活動消費 − 摂取
+  // (食事と体重の記録があり、かつ基礎代謝を出せるプロフィールが入っている日のみ)
+  const bmrKcal = refWeight != null ? profileBmr(profile, refWeight) : undefined;
+  const deficit = meal != null && bmrKcal != null ? dailyDeficit(bmrKcal, burn, intake) : undefined;
 
   // 必要1日消費(目標設定がある場合)
   const latestKg = sorted.at(-1)?.kg;
@@ -1172,6 +1166,12 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
       {refWeight != null && meal == null && (
         <p className="muted note" style={{ marginBottom: 0 }}>
           ※食事を記録するとカロリー貯金が表示されます。
+        </p>
+      )}
+      {refWeight != null && bmrKcal == null && (
+        <p className="muted note" style={{ marginBottom: 0 }}>
+          ※基礎代謝の推定には身長・生年月日・性別が必要です(任意項目)。
+          「あなた」タブで入力すると計算されます。
         </p>
       )}
     </div>

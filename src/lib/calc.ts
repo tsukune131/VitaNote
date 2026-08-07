@@ -1,6 +1,11 @@
 import type { Sex } from '../db';
 
-/** 体脂肪1kgの消費に必要なカロリー */
+/**
+ * 体脂肪1kgの減量に必要な消費カロリー。
+ * 出典: 厚生労働省 e-ヘルスネット「内臓脂肪型肥満を改善する運動」
+ * (体脂肪1kgはおよそ7,000〜7,200kcalに相当)。
+ * https://www.e-healthnet.mhlw.go.jp/information/exercise/s-02-003.html
+ */
 export const KCAL_PER_KG = 7200;
 
 export const ACTIVITY_LEVELS: { value: number; label: string }[] = [
@@ -46,6 +51,20 @@ export function ageAt(birthDate: string, on: Date = new Date()): number {
 /** 基礎代謝量(Mifflin-St Jeor式) */
 export function bmr(weightKg: number, heightCm: number, age: number, sex: Sex): number {
   return 10 * weightKg + 6.25 * heightCm - 5 * age + (sex === 'male' ? 5 : -161);
+}
+
+/**
+ * プロフィールの任意項目から基礎代謝を求める。
+ * 身長・生年月日・性別はどれも任意入力なので、欠けていれば推定せずundefinedを返す。
+ */
+export function profileBmr(
+  profile: { heightCm?: number; birthDate?: string; sex?: Sex },
+  weightKg: number,
+  on: Date = new Date(),
+): number | undefined {
+  const { heightCm, birthDate, sex } = profile;
+  if (heightCm == null || heightCm <= 0 || !birthDate || !sex) return undefined;
+  return bmr(weightKg, heightCm, ageAt(birthDate, on), sex);
 }
 
 /** 1日の推定消費カロリー(TDEE) */

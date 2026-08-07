@@ -63,6 +63,7 @@ SelfCareNote
 ・体重と腹囲を重ねた折れ線、体脂肪率、摂取カロリー、歩数のグラフ
 ・「カロリー貯金」= その日に使ったカロリー − 食べたカロリー。
 　貯金が約7,200kcalたまるごとに体重が1kg減る計算です
+　(体脂肪1kg≒7,200kcalは厚生労働省 e-ヘルスネットの記載に基づく目安です)
 ・1か月を1日1行で見渡すカレンダー。その日のメモも一緒に残せます
 
 ■ 書く楽しさ
@@ -287,6 +288,102 @@ The purchase enables recording of blood test results and blood pressure
 ```
 
 ---
+
+## 1回目のリジェクトと対応(2026-08-07 / Submission 5f3fff25-b52d-48a9-a8be-de292bdfe83e)
+
+1.0 (42) に対する指摘は2件。
+
+### Guideline 5.1.1(v) — 必須にしていた個人情報(身長・生年月日・性別)
+
+コア機能(記録)に必須ではない情報を入力必須にしていたのが原因。
+オンボーディングの「あなたについて」で名前・身長・生年月日を空欄のまま
+進めず、性別も初期値「男性」で選択済みの状態だった。
+
+**直したこと(コード):**
+
+- `Profile` の name / heightCm / birthDate / sex を任意(optional)に変更
+- プロフィール入力は全項目を任意に。空欄のまま保存でき、性別は「未回答」が初期値
+- オンボーディングに「入力せずにつづける」を追加(空のプロフィールで進む)
+- 未入力の項目に依存する推定値(BMI・推定消費カロリー・カロリー貯金・きょうの処方箋)は
+  計算せず「—」とし、「入力すると計算できる/入力しなくても記録は使える」と案内する
+- 入力済みの値は「あなた」タブの編集から空欄にして保存すれば削除できる
+  (Dexieのupdateはundefinedでキーごと削除する)
+- プライバシーポリシーの記載も「すべて任意」に更新
+
+### Guideline 2.1 — カロリー貯金の場所と計算根拠
+
+説明文に書いた「カロリー貯金」の画面と、7,200kcalの出典を聞かれた。
+
+**直したこと(表示):** ふりかえりタブのカロリー貯金の説明に出典を明記。
+利用規約2項にも計算式(Mifflin-St Jeor式・METs法・7,200kcal換算)と出典を追記。
+ストア説明文にも出典の1行を追加。
+
+### 返信文(App Store Connect に貼るもの)
+
+```
+Thank you for the review. Here are our answers.
+
+--- Guideline 5.1.1(v) ---
+
+We have removed the requirement. In the new build, height, date of birth,
+gender and name are all optional:
+
+- The onboarding profile screen can be passed with every field left blank
+  by tapping "入力せずにつづける" (Continue without entering).
+- The gender selector now defaults to "未回答" (Prefer not to say).
+- All recording features (weight, meals, water, steps, exercise, medication,
+  calendar, graphs) work without any of this information.
+- If the user does enter these optional values, they are used only on device
+  to estimate BMI, estimated daily energy expenditure and the "calorie
+  savings" figure. Estimates that need a missing value are simply hidden.
+- Entered values can be cleared at any time: "あなた" (You) tab → "編集"
+  (Edit) → clear the field → "保存" (Save).
+
+--- Guideline 2.1: where to find "カロリー貯金" (calorie savings) ---
+
+Steps from a fresh install:
+
+1. Complete the short onboarding (you may skip every input).
+2. "きょう" (Today) tab → enter today's weight (体重) and any meal calories
+   (朝食 / 昼食 / 夕食 / 間食).
+3. Scroll to the card "この日のまとめ" (Summary of the day). The figure
+   labelled "今日のカロリー貯金" is the feature. The explanation of the
+   formula is printed directly under it.
+4. The monthly view is in the "ふりかえり" (Look back) tab → select the
+   "カロリー収支" (Calorie balance) chart. The bar chart is titled
+   "カロリー貯金" and the note under the chart states the formula and the
+   source.
+
+Note: the figure requires a weight record and a meal record for that day.
+It also requires height, date of birth and gender, which are optional as
+described above; without them the app shows "—" and a note explaining
+which optional values would enable the estimate.
+
+--- Guideline 2.1: source of the calculation ---
+
+"カロリー貯金" is simply the difference between estimated energy expenditure
+and recorded energy intake for the day:
+
+  savings (kcal) = BMR x 1.2 + (walking + exercise) - food intake
+
+- BMR: Mifflin-St Jeor equation
+  (Mifflin MD, St Jeor ST, et al. "A new predictive equation for resting
+  energy expenditure in healthy individuals." Am J Clin Nutr. 1990;51(2):241-247.)
+- Walking / exercise: the METs method,
+  kcal = METs x body weight (kg) x duration (h) x 1.05, using the
+  "Compendium of Physical Activities" MET values (walking = 3.0 METs).
+- 1 kg of body fat is treated as approximately 7,200 kcal. This is the
+  figure published by the Japanese Ministry of Health, Labour and Welfare
+  in e-ヘルスネット (e-Healthnet), its public health information site:
+  https://www.e-healthnet.mhlw.go.jp/information/exercise/s-02-003.html
+
+These are presented as estimates only. The app states in-app (and in the
+Terms of Use, section 2) that the figures are estimates from general
+formulas, that individual results vary, and that the app does not diagnose,
+treat or prevent any disease.
+```
+
+日本語で返信する場合も内容は同じ。画面名はそのまま日本語で書けばよい。
 
 ## 未対応・要確認
 

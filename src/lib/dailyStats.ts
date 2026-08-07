@@ -6,7 +6,7 @@ import {
   type StepEntry,
   type WeightEntry,
 } from '../db';
-import { ageAt, bmr, dailyDeficit, stepsToKcal } from './calc';
+import { dailyDeficit, profileBmr, stepsToKcal } from './calc';
 import { addDays, todayStr } from './date';
 
 export interface DayStat {
@@ -47,7 +47,6 @@ export async function getRecentDayStats(profile: Profile, windowDays: number): P
   ]);
 
   const sortedWeights = [...allWeights].sort((a, b) => a.date.localeCompare(b.date));
-  const age = ageAt(profile.birthDate);
 
   const days: DayStat[] = [];
   for (let i = 0; i < windowDays; i++) {
@@ -64,10 +63,10 @@ export async function getRecentDayStats(profile: Profile, windowDays: number): P
     const exerciseKcal = exs.reduce((s, e) => s + e.kcal, 0);
     const burn = stepKcal + exerciseKcal;
     const intake = meal ? meal.breakfast + meal.lunch + meal.dinner + meal.snack : undefined;
+    // 基礎代謝はプロフィールが揃っている場合のみ求まる(身長などは任意入力)
+    const bmrKcal = refWeight != null ? profileBmr(profile, refWeight) : undefined;
     const deficit =
-      meal != null && refWeight != null
-        ? dailyDeficit(bmr(refWeight, profile.heightCm, age, profile.sex), burn, intake ?? 0)
-        : undefined;
+      meal != null && bmrKcal != null ? dailyDeficit(bmrKcal, burn, intake ?? 0) : undefined;
 
     const dinnerLogged = meal != null && (meal.dinner > 0 || !!meal.dinnerTime);
     days.push({ date, weight: w?.kg, intake, burn, deficit, dinnerLogged });

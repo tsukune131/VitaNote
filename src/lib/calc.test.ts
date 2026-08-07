@@ -10,6 +10,7 @@ import {
   kcalToSteps,
   metsToKcal,
   pickReferenceWeight,
+  profileBmr,
   requiredDailyKcal,
   stepsToKcal,
   tdee,
@@ -55,6 +56,21 @@ describe('bmr / tdee', () => {
   });
   it('TDEEは活動係数を掛ける', () => {
     expect(tdee(1600, 1.55)).toBeCloseTo(2480);
+  });
+});
+
+describe('profileBmr', () => {
+  const full = { heightCm: 170, birthDate: '1990-06-15', sex: 'male' as const };
+  const on = new Date('2026-06-15T00:00:00');
+
+  it('身長・生年月日・性別が揃っていればBMRを返す', () => {
+    expect(profileBmr(full, 70, on)).toBeCloseTo(bmr(70, 170, 36, 'male'));
+  });
+  it('どれか1つでも未入力ならundefined', () => {
+    expect(profileBmr({ ...full, heightCm: undefined }, 70, on)).toBeUndefined();
+    expect(profileBmr({ ...full, birthDate: undefined }, 70, on)).toBeUndefined();
+    expect(profileBmr({ ...full, sex: undefined }, 70, on)).toBeUndefined();
+    expect(profileBmr({}, 70, on)).toBeUndefined();
   });
 });
 

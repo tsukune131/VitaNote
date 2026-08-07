@@ -42,6 +42,8 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
   if (!showRequired) return null; // 目標未設定では「あと何」を計算できない
 
   const view = prescriptionView(today?.deficit, required, today?.dinnerLogged ?? false);
+  // 基礎代謝(=貯金)の推定に必要な任意項目が揃っているか
+  const canEstimate = profile.heightCm != null && !!profile.birthDate && !!profile.sex;
 
   // 歩数換算(体重ベース)。1,000歩あたりの消費と、指定kcalを歩くのに必要な歩数
   const kcalPer1000 = latestWeight != null ? Math.round(stepsToKcal(1000, latestWeight)) : undefined;
@@ -54,7 +56,9 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
 
       {view.kind === 'need-record' && (
         <p className="muted" style={{ margin: 0 }}>
-          食事と体重を記録すると、きょう必要な散歩・食事量の目安が分かります。
+          {canEstimate
+            ? '食事と体重を記録すると、きょう必要な散歩・食事量の目安が分かります。'
+            : '目安の計算には、食事と体重の記録に加えて「あなた」タブの身長・生年月日・性別(任意)が必要です。'}
         </p>
       )}
 

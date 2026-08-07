@@ -27,10 +27,9 @@ import {
   type WeightEntry,
 } from '../db';
 import {
-  ageAt,
-  bmr,
   dailyDeficit,
   daysUntil,
+  profileBmr,
   requiredDailyKcal,
   stepsToKcal,
   totalKcalToGoal,
@@ -184,7 +183,6 @@ export function TrendsPage({ profile }: { profile: Profile }) {
   const rows: DayRow[] = useMemo(() => {
     if (!raw) return [];
     const today = todayStr();
-    const age = ageAt(profile.birthDate);
     const sortedWeights = [...raw.allWeights].sort((a, b) => a.date.localeCompare(b.date));
     return monthDates(month).map((date, i) => {
       const w = raw.weights.find((x) => x.date === date);
@@ -209,14 +207,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       const burn = hasActivity && isPastOrToday ? stepKcal + exerciseKcal : undefined;
       const intake = meal ? meal.breakfast + meal.lunch + meal.dinner + meal.snack : 0;
 
-      // カロリー貯金は摂取(食事記録)と体重が揃っている日のみ計算
+      // カロリー貯金は摂取(食事記録)と体重が揃い、基礎代謝を出せる日のみ計算
+      const bmrKcal = refWeight != null ? profileBmr(profile, refWeight) : undefined;
       const deficit =
-        isPastOrToday && meal != null && refWeight != null
-          ? dailyDeficit(
-              bmr(refWeight, profile.heightCm, age, profile.sex),
-              stepKcal + exerciseKcal,
-              intake,
-            )
+        isPastOrToday && meal != null && bmrKcal != null
+          ? dailyDeficit(bmrKcal, stepKcal + exerciseKcal, intake)
           : undefined;
 
       return {
@@ -597,6 +592,12 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             カロリー貯金は「その日に使ったカロリー(基礎代謝×1.2+歩数・運動)−
             食べたカロリー」。貯金がプラスの日は体重が減る方向で、運動を増やしても食事を抑えても貯まります。
             貯金が約7,200kcal貯まるごとに体重が1kg減る計算です。食事と体重を記録した日に表示されます。
+          </p>
+          <p className="muted note" style={{ marginBottom: 0 }}>
+            ※体脂肪1kg = 約7,200kcalは、厚生労働省 e-ヘルスネット
+            「内臓脂肪型肥満を改善する運動」に基づく目安です。実際の減量は個人差があります。
+            <br />
+            ※基礎代謝の推定には「あなた」タブの身長・生年月日・性別(いずれも任意)が必要です。
           </p>
         </div>
       )}

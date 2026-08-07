@@ -4,11 +4,10 @@ import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
 import { ProfileForm } from '../components/ProfileForm';
 import {
-  ageAt,
   bmi,
   bmiCategory,
-  bmr,
   daysUntil,
+  profileBmr,
   requiredDailyKcal,
   tdee,
   totalKcalToGoal,
@@ -58,13 +57,12 @@ export function YouPage({ profile }: { profile: Profile }) {
   );
 
   const weightKg = latest?.weight?.kg;
-  const age = ageAt(profile.birthDate);
 
-  const bmiValue = weightKg != null ? bmi(weightKg, profile.heightCm) : undefined;
-  const tdeeValue =
-    weightKg != null
-      ? tdee(bmr(weightKg, profile.heightCm, age, profile.sex), profile.activityLevel)
-      : undefined;
+  // 身長・生年月日・性別は任意入力。欠けている推定値は「—」で伏せる
+  const bmiValue =
+    weightKg != null && profile.heightCm != null ? bmi(weightKg, profile.heightCm) : undefined;
+  const bmrValue = weightKg != null ? profileBmr(profile, weightKg) : undefined;
+  const tdeeValue = bmrValue != null ? tdee(bmrValue, profile.activityLevel) : undefined;
 
   const targetKg = Number(targetWeight);
   const hasGoal = targetKg > 0 && targetDate !== '' && weightKg != null;
@@ -92,7 +90,7 @@ export function YouPage({ profile }: { profile: Profile }) {
     <div>
       <div className="card">
         <div className="card-head">
-          <h2>{profile.name} さんの現在</h2>
+          <h2>{profile.name ? `${profile.name} さんの現在` : '現在の記録'}</h2>
           <button className="ghost" onClick={() => setEditing((v) => !v)}>
             {editing ? '閉じる' : '編集'}
           </button>
@@ -106,8 +104,8 @@ export function YouPage({ profile }: { profile: Profile }) {
           <div className="stat">
             <div className="label">身長</div>
             <div className="value">
-              {profile.heightCm}
-              <small> cm</small>
+              {profile.heightCm != null ? profile.heightCm : '未設定'}
+              {profile.heightCm != null && <small> cm</small>}
             </div>
           </div>
           <div className="stat">
@@ -148,6 +146,12 @@ export function YouPage({ profile }: { profile: Profile }) {
         </div>
         {weightKg == null && (
           <p className="muted">「きょう」タブで体重を入力するとBMIなどが表示されます。</p>
+        )}
+        {weightKg != null && (bmiValue == null || tdeeValue == null) && (
+          <p className="muted">
+            BMIには身長、推定消費カロリーには身長・生年月日・性別が必要です。
+            いずれも任意で、「編集」からいつでも入力・削除できます。入力しなくても記録機能はすべて使えます。
+          </p>
         )}
       </div>
 
