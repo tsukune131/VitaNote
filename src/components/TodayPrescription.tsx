@@ -3,11 +3,11 @@ import { type Profile } from '../db';
 import {
   RICE_BOWL_KCAL,
   daysUntil,
-  kcalToSteps,
   minIntakeKcal,
   requiredDailyKcal,
   safeRequiredForDay,
   stepsToKcal,
+  suggestedSteps,
   totalKcalToGoal,
 } from '../lib/calc';
 import { getRecentDayStats } from '../lib/dailyStats';
@@ -55,10 +55,14 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
   // 基礎代謝(=貯金)の推定に必要な任意項目が揃っているか
   const canEstimate = profile.heightCm != null && !!profile.birthDate && !!profile.sex;
 
-  // 歩数換算(体重ベース)。1,000歩あたりの消費と、指定kcalを歩くのに必要な歩数
+  // 歩数換算(体重ベース)。1,000歩あたりの消費と、指定kcalを歩くのに必要な歩数。
+  // 勧めてよい上限を超える量はundefinedになる。無理な歩数を指示しない(ガイドライン1.4.5)
   const kcalPer1000 = latestWeight != null ? Math.round(stepsToKcal(1000, latestWeight)) : undefined;
-  const stepsFor = (k: number) =>
-    latestWeight != null ? Math.round(kcalToSteps(k, latestWeight)).toLocaleString() : '—';
+  const walk = (steps: number) => `約${steps.toLocaleString()}歩`;
+  const overSteps =
+    view.kind === 'budget-over' || view.kind === 'over'
+      ? suggestedSteps(view.over, latestWeight)
+      : undefined;
 
   return (
     <div className="card">
@@ -92,7 +96,9 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
             いまのままだと <strong>{kcal(view.over)} オーバー</strong>します。
           </p>
           <p className="muted" style={{ margin: 0 }}>
-            夕食を軽くするか、🚶 {stepsFor(view.over)}歩 歩くと取り返せます。
+            {overSteps != null
+              ? `夕食を軽くするか、🚶 ${walk(overSteps)} 歩くと取り返せます。`
+              : '歩数だけで取り返すのは難しい量です。夕食を軽くするか、数日かけて調整しましょう。'}
           </p>
         </>
       )}
@@ -109,7 +115,9 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
           <p className="muted" style={{ margin: 0 }}>
             夜に取り返すのは大変なので、明日の活動で調整しましょう。
             <br />
-            歩数では🚶 {stepsFor(view.over)}歩 頑張って歩きましょう。
+            {overSteps != null
+              ? `歩数では🚶 ${walk(overSteps)} が目安です。無理のない範囲で体を動かしましょう。`
+              : '歩数だけで取り返すのは難しい量なので、数日かけて調整しましょう。'}
           </p>
         </>
       )}

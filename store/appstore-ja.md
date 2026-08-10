@@ -289,16 +289,44 @@ The purchase enables recording of blood test results and blood pressure
 ・本アプリは記録のための道具であり、診断・治療・予防を目的としたものでは
 　ありません。お薬の効き目や飲み合わせに関する助言は行いません。
 
-・血圧・血糖値は、ご自身で測定された値を手入力で記録する機能です。
-　端末のセンサーによる測定は行っておらず、測定機能をうたってもいません。
+・血圧・血糖値・血液検査は、ご家庭の血圧計・血糖測定器や検査結果票の数値を
+　利用者が手で書き写して記録する機能です。本アプリおよび端末のセンサーが
+　これらを測定することはなく、測定機能をうたってもいません。判定や結果の
+　解釈も行いません。この旨は各入力画面とグラフにも常時表示しています。
+
+・本アプリは医療機器ではなく、いかなる規制当局の承認・認証も受けておらず、
+　それを主張してもいません。表示する数値はすべて公開資料の計算式による推定値です。
 
 ・健康に関する数値の計算式と出典は、アプリ内「設定」タブ →
-　「このアプリについて」→「数値の出典」、および「ふりかえり」タブの末尾から
-　ご確認いただけます。
+　「このアプリについて」→「数値の出典」からご確認いただけます。
+　あわせて、数値を表示している画面すべてに出典への入口を置いています。
+　　「きょう」: 目標の進捗カード、きょうの処方箋、運動の消費カロリー、この日のまとめ
+　　「ふりかえり」: カロリー貯金の説明、血液検査の基準値、画面末尾の
+　　　　　　　　　「この画面の数値について」(どのグラフでも表示)
+　　「カレンダー」: 月の歩数まとめ(推定距離・推定消費カロリー)
+　　「あなた」: BMI・推定消費カロリーの下、目標の逆算の下、血液検査カード
 
-・目標体重と達成日から逆算した食事量が極端に少なくなる場合は、
-　推定基礎代謝量または1,200kcalの高い方を下回らないところで頭打ちにし、
-　目標に無理がある旨と医師への相談を画面に表示します。
+・医師へのご相談を促す表示は、次の場所に常設しています。
+　　初回のオンボーディング1画面目 /「きょう」タブの目標の進捗カード・
+　　きょうの処方箋・この日のまとめ /「ふりかえり」タブのカロリー貯金の説明 /
+　　「あなた」タブの目標欄 / 血圧・血糖値と血液検査の各画面 /「数値の出典」シートの冒頭
+
+・目標体重と達成日からの逆算は、勧める1日の食事量が
+　max(推定基礎代謝量, 1,200kcal) を下回らないところで必ず頭打ちにしています。
+　逆算値を表示するすべての画面(「きょう」タブの進捗カード・きょうの処方箋・
+　この日のまとめ、「ふりかえり」タブの目標ライン、「あなた」タブの逆算)が
+　同一の関数(safeRequiredForDay)を通しており、画面間で数値が食い違うことは
+　ありません。頭打ちが働いたときは、その旨と「達成日を延ばすか目標体重を
+　見直してください」「減量の進め方は医師にご相談ください」を画面に表示します。
+　身長・生年月日・性別(いずれも任意入力)が未入力で基礎代謝を推定できない
+　場合は、安全な上限を計算できないため、逆算値そのものを表示しません。
+
+・不足分を「歩けば取り返せます」と歩数に言い換える表示は、1日10,000歩を
+　上限としています。これを超える量は歩数で示さず、数日かけての調整や
+　食事量の見直しを案内します。この上限は本アプリが表示上置いた歯止めであり、
+　公的な推奨値ではない旨を「数値の出典」に明記しています(参考として、
+　厚生労働省「健康づくりのための身体活動・運動ガイド2023」が成人に推奨する
+　1日の身体活動量は歩行等を1日60分以上・約8,000歩以上に相当することも併記)。
 ```
 
 ---
@@ -534,6 +562,20 @@ further safety changes on our own initiative:
   metabolic rate or 1,200 kcal/day. When a goal would require going below
   that, the app says so and advises extending the target date and consulting
   a doctor, instead of silently showing an extreme number.
+  This cap is applied through a single shared function that every screen
+  showing a derived daily target calls, so the figures shown on different
+  tabs can no longer disagree. When the user's height, date of birth and sex
+  are left blank (all of them are optional), the app cannot estimate a basal
+  metabolic rate and therefore does not display the derived daily target at
+  all, rather than showing an uncapped value.
+- When the app expresses a shortfall as a number of steps to walk, it now
+  caps that suggestion at 10,000 steps per day. Above that, the app no
+  longer names a step count and instead suggests adjusting over several
+  days or reviewing food intake. The citation sheet states plainly that
+  this ceiling is a display limit we impose ourselves and not a public
+  recommendation, and gives the figure recommended for adults by the
+  Japanese Ministry of Health, Labour and Welfare (60+ minutes of walking
+  a day, roughly 8,000 steps) alongside it for reference.
 - The app now reminds users to consult a doctor at the points where these
   figures are shown (onboarding, the daily suggestion, the calorie-savings
   graph and the goal settings), not only in the Terms of Use.
@@ -546,6 +588,71 @@ these values using the device sensors.
 The app continues to state that all figures are estimates and that it does
 not diagnose, treat or prevent any disease.
 ```
+
+## 3回目の提出前に直したもの(2026-08-11)
+
+2回目の1.4.1対応を実装と突き合わせ直したところ、**「対応した」と書いてあるのに
+効いていない画面**が残っていた。指摘を受ける前に潰したもの。
+
+### 1. 逆算値の頭打ちが3画面にしか効いていなかった
+
+「きょう」タブの進捗カード(StreakSummary)と「この日のまとめ」(DailySummary)が
+生の `requiredDailyKcal` を出しており、同じ目標に対して**1回のスクロールで
+1,167kcal と 313kcal が同居**していた(170cm/40歳男性 70→65kg/30日)。
+
+対応: `calc.ts` に `safeRequiredForDay` を新設し、逆算値を出す5画面すべてを通した。
+基礎代謝が推定できない場合は生値に落とさず `undefined` を返し、画面に「—」を出す。
+
+### 2. プロフィール未入力だと上限が丸ごと無効になっていた
+
+`YouPage` の `dailyKcal = safeDaily?.value ?? rawDailyKcal` と `TrendsPage` の
+`bmrKcal == null` 時の早期returnが生値にフォールバックしていた。
+1回目の5.1.1(v)対応でプロフィールを全部任意にしたため、
+**「入力せずにつづける」で進んだ利用者だけ上限が効かない**状態だった。
+審査担当者が最初に踏む経路なので最優先で潰した。
+
+### 3. 「きょう」タブに出典の入口が無い状態が成立しえた
+
+`DailySummary` が計算式を地の文で書いているのに出典リンクが無く、
+`TodayPrescription` は目標未設定だとカードごと消えるため、
+目標を設定していない利用者には出典が1つも出なかった。
+1回目の返信でApple自身に案内した動線だったので、`DailySummary`(同タブで唯一
+常に描画されるカード)に無条件の出典リンクと医師相談を置いた。
+
+### 4. 歩数への言い換えに上限が無かった
+
+60kgの人が986kcalオーバーすると「🚶 35,773歩 頑張って歩きましょう」と出ていた(約25km)。
+`MAX_SUGGESTED_STEPS = 10000` を設け、超える量は歩数で示さない(60kgなら約276kcalが境目)。
+
+**この10,000歩には公的な裏付けが無い。** 厚労省「身体活動・運動ガイド2023」推奨シート:成人版の
+推奨は「歩行等を1日60分以上(1日約8,000歩以上に相当)」で、上限はそれを上回る。
+そのため「数値の出典」には**アプリが置いた表示上の歯止めであって推奨値ではない**と明記し、
+参考として推奨量の8,000歩を併記している。7,200kcalのときのように、
+出典に無い数字を出典由来であるかのように書かないため。
+
+### 5. 出典が中継ページ止まりだった3件
+
+| 数値 | 旧 | 新 |
+|---|---|---|
+| 肥満1〜4度 | `jasso.or.jp/`(トップ。分類の数値なし) | `medicareguide2022_06.pdf`(第2章 肥満の判定と肥満症の診断基準) |
+| 血液検査の基準値 | `other_inspection`(年度違いのPDFが並ぶ一覧) | `2026hanteikijun.pdf`(判定区分 2026年4月1日改定) |
+| ご飯240kcal | 版名が「2020年版(八訂)」 | 「(八訂)増補2023年」に修正し、食品番号01088をnoteに明記 |
+
+### 6. 血圧・血糖値・血液検査の画面に手入力である旨が無かった
+
+規約4項と審査メモにしか無く、**1.4.1が名指しする項目なのに画面に出ていなかった**。
+「きょう」タブの血圧・血糖値カード、「あなた」タブの血液検査カード、
+「ふりかえり」タブの血圧・血糖値グラフの3か所に常設した。
+
+### 7. カレンダータブに出典の入口が無かった
+
+「推定距離」「推定消費カロリー」を出しているのにMETs法の出典が無かったので追加。
+
+**要確認(未検証):** 血液検査の基準値9項目のうち、HbA1c・LDL・HDL・中性脂肪・
+AST・ALT・γ-GTPの7項目は人間ドック学会の判定区分と一致することを二次情報で確認済み。
+**尿酸とeGFRは未確認。**判定区分表PDFにテキスト層が無く機械的に読めなかった。
+とくに尿酸は、判定区分Aが下限付き(2.1〜7.0)である可能性があり、
+アプリの表示は「7.0以下」。提出前にPDFを開いて目視確認すること。
 
 ## 未対応・要確認
 

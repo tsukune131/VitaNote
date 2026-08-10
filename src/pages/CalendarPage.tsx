@@ -11,6 +11,7 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type NoteEntry, type Profile, type StepEntry, type WeightEntry } from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
+import { SourcesLink } from '../components/SourcesSheet';
 import { pickReferenceWeight, stepsToKcal, stepsToKm } from '../lib/calc';
 import {
   WEEKDAY_LABELS,
@@ -174,6 +175,12 @@ export function CalendarPage({ profile }: { profile: Profile }) {
             </div>
           </div>
         </div>
+        {/* 距離も消費カロリーも推定値。数字を見せた場所から出典に行けるようにする(ガイドライン1.4.1) */}
+        <p className="source-link" style={{ marginBottom: 0 }}>
+          距離と消費カロリーは、歩幅0.7m・時速4.8km・歩行3.0メッツを前提としたMETs法
+          (メッツ × 体重 × 時間 × 1.05)による推定です。歩幅と歩く速さには個人差があります。
+          <SourcesLink focus="mets" label="出典を見る" />
+        </p>
       </div>
       )}
 

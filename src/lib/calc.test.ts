@@ -8,6 +8,7 @@ import {
   daysUntil,
   isMetaboWaist,
   kcalToSteps,
+  MAX_SUGGESTED_STEPS,
   maxSafeDailyDeficit,
   metsToKcal,
   minIntakeKcal,
@@ -17,6 +18,7 @@ import {
   safeRequiredDailyKcal,
   safeRequiredForDay,
   stepsToKcal,
+  suggestedSteps,
   tdee,
   totalKcalToGoal,
 } from './calc';
@@ -150,6 +152,39 @@ describe('safeRequiredForDay', () => {
 
   it('無理のない目標はそのまま通す', () => {
     expect(safeRequiredForDay(200, 1568)).toEqual({ value: 200, capped: false });
+  });
+});
+
+describe('suggestedSteps', () => {
+  // ありふれた食べ過ぎでも逆算は3万歩を超える。無理な歩数を勧めないための歯止め
+  it('勧めてよい範囲なら歩数を返す', () => {
+    expect(suggestedSteps(200, 60)).toBeLessThanOrEqual(MAX_SUGGESTED_STEPS);
+    expect(suggestedSteps(200, 60)).toBeGreaterThan(0);
+  });
+
+  it('境目は体重で決まる(60kgなら約275kcal)', () => {
+    // 10,000歩ぶんの消費は 60kg で 275.6kcal。その前後で表示が切り替わる
+    expect(stepsToKcal(MAX_SUGGESTED_STEPS, 60)).toBeCloseTo(275.6, 1);
+    expect(suggestedSteps(275, 60)).toBeLessThanOrEqual(MAX_SUGGESTED_STEPS);
+    expect(suggestedSteps(280, 60)).toBeUndefined();
+  });
+
+  it('上限を超える量は歩数で示さない', () => {
+    // 60kg女性が986kcalオーバー → 逆算では約36,000歩(約25km)
+    expect(kcalToSteps(986, 60)).toBeGreaterThan(30000);
+    expect(suggestedSteps(986, 60)).toBeUndefined();
+    // 極端な目標でも数字が漏れない
+    expect(suggestedSteps(483000, 70)).toBeUndefined();
+  });
+
+  it('体重が分からなければ換算しない', () => {
+    expect(suggestedSteps(200, undefined)).toBeUndefined();
+    expect(suggestedSteps(200, 0)).toBeUndefined();
+  });
+
+  it('オーバーしていなければ換算しない', () => {
+    expect(suggestedSteps(0, 60)).toBeUndefined();
+    expect(suggestedSteps(-100, 60)).toBeUndefined();
   });
 });
 

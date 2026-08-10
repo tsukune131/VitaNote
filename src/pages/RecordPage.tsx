@@ -247,6 +247,13 @@ function HealthMetricsSection({ profile, date }: { profile: Profile; date: strin
         血圧・血糖値
         <ProBadge />
       </h2>
+      {/* 1.4.1は「端末のセンサーだけで血圧・血糖値を測る」と称するアプリを名指しで禁じている。
+          手入力の記録であることを、規約の中だけでなく入力画面そのものに書いておく */}
+      <p className="muted note" style={{ marginTop: 0 }}>
+        ご家庭の血圧計・血糖測定器などで測った値を書き写して記録します。
+        本アプリやiPhoneのセンサーが血圧・血糖値を測定することはありません。
+        数値の意味や治療の判断は医師にご相談ください。
+      </p>
       <ProLock>
       {activeFields.map(([key, label, unit]) => (
         <label className="field" key={key}>

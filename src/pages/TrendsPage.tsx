@@ -701,6 +701,16 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               </LineChart>
             </ChartCard>
           )}
+          {/* 血圧・血糖値は計算値ではなく手入力の記録。測定機能と誤解されないよう明示する */}
+          <div className="card">
+            <p className="muted note" style={{ margin: 0 }}>
+              ※このグラフは、ご家庭の血圧計・血糖測定器などで測った値を「きょう」タブに
+              書き写して記録したものをそのまま並べたものです。本アプリやiPhoneのセンサーが
+              血圧・血糖値を測定することはなく、基準値の判定や結果の解釈も行いません。
+              <br />
+              ※数値の意味や治療の判断は医師にご相談ください。
+            </p>
+          </div>
         </>
       )}
 

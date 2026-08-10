@@ -222,6 +222,30 @@ export function kcalToSteps(kcal: number, weightKg: number): number {
 }
 
 /**
+ * 「歩けば取り返せます」と勧めてよい歩数の上限。
+ *
+ * 逆算をそのまま出すと、ありふれた食べ過ぎ(1,000kcal程度)でも3万歩を超える。
+ * 25kmを歩けと勧めるのは身体的な危害を招きうるので、超える量は歩数に言い換えない。
+ *
+ * 10,000歩は日常でよく使われる1日の目標歩数だが、**公的な推奨値ではない**。
+ * 厚生労働省「健康づくりのための身体活動・運動ガイド2023」が成人に推奨するのは
+ * 歩行等を1日60分以上(約8,000歩以上に相当)で、この上限はそれを上回る。
+ * つまりこれは本アプリが表示上置いた歯止めであって、医学的な推奨量ではない。
+ * sources.ts の 'mets' でも、そう断ったうえで参考値として推奨量を併記している。
+ */
+export const MAX_SUGGESTED_STEPS = 10000;
+
+/**
+ * 不足カロリーを「歩数」で言い換えてよいかを判定する。
+ * 勧めてよい範囲なら歩数を、超えるならundefinedを返して呼び出し側に別の言い方をさせる。
+ */
+export function suggestedSteps(kcal: number, weightKg: number | undefined): number | undefined {
+  if (weightKg == null || weightKg <= 0 || kcal <= 0) return undefined;
+  const steps = Math.round(kcalToSteps(kcal, weightKg));
+  return steps > MAX_SUGGESTED_STEPS ? undefined : steps;
+}
+
+/**
  * ご飯茶碗1杯(中盛り、白米150g)のおおよそのカロリー。食事量の目安換算に使う。
  * 出典は sources.ts の 'rice' を参照。
  */

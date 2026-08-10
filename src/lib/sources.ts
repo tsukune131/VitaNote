@@ -96,7 +96,12 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
     formula: '消費カロリー(kcal) = メッツ × 体重(kg) × 時間(h) × 1.05',
     note:
       '運動のメッツ値はメッツ表によります。歩数からの推定では、歩幅0.7m・時速4.8km・歩行3.0メッツを前提に' +
-      '距離と時間を割り出しています。歩幅と歩く速さは本アプリが置いた一律の前提で、実際には個人差があります。',
+      '距離と時間を割り出しています。歩幅と歩く速さは本アプリが置いた一律の前提で、実際には個人差があります。' +
+      'また「歩けば取り返せます」という言い換えは1日10,000歩までにとどめ、それを超える量は歩数で示しません。' +
+      'この10,000歩は本アプリが表示上置いた歯止めで、公的な推奨値ではありません。' +
+      '参考までに、身体活動・運動ガイド2023が成人に推奨する1日の身体活動量は' +
+      '歩行等を1日60分以上(約8,000歩以上に相当)です。' +
+      '実際にどれだけ体を動かせるかは体調や持病によりますので、医師にご相談ください。',
     refs: [
       {
         title: '『身体活動のメッツ(METs)表』改訂第2版(Compendium of Physical Activities 準拠)',
@@ -108,23 +113,33 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
         publisher: '厚生労働省',
         url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/undou/index.html',
       },
+      {
+        title:
+          '「健康づくりのための身体活動・運動ガイド2023」推奨シート:成人版(歩行等を1日60分以上、1日約8,000歩以上に相当)',
+        publisher: '厚生労働省',
+        url: 'https://kennet.mhlw.go.jp/information/information/exercise/s-00-002.html',
+      },
     ],
   },
   {
     id: 'bmi',
     heading: 'BMIと肥満度の判定',
     formula: 'BMI = 体重(kg) ÷ 身長(m)² / 18.5未満:低体重、25未満:普通体重、25以上:肥満(1〜4度)',
-    note: '肥満1度は25以上30未満、2度は30以上35未満、3度は35以上40未満、4度は40以上です。',
+    note:
+      '肥満1度は25以上30未満、2度は30以上35未満、3度は35以上40未満、4度は40以上です。' +
+      'この1〜4度の区分は日本肥満学会の肥満度分類によります(下記1件目の第2章)。' +
+      '厚生労働省 e-ヘルスネットは、18.5未満を低体重・25以上を肥満とする定義を示しています。',
     refs: [
+      {
+        // 画面に出している「肥満(1〜4度)」の根拠はこちら。第2章が肥満度分類の章
+        title: '肥満症診療ガイドライン2022 第2章「肥満の判定と肥満症の診断基準」(肥満度分類)',
+        publisher: '日本肥満学会',
+        url: 'https://www.jasso.or.jp/data/magazine/pdf/medicareguide2022_06.pdf',
+      },
       {
         title: 'BMI(e-ヘルスネット 用語辞典)',
         publisher: '厚生労働省',
         url: 'https://kennet.mhlw.go.jp/information/information/dictionary/metabolic/ym-002.html',
-      },
-      {
-        title: '肥満症診療ガイドライン2022(肥満度分類)',
-        publisher: '日本肥満学会',
-        url: 'https://www.jasso.or.jp/',
       },
     ],
   },
@@ -148,13 +163,20 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
     heading: '血液検査の基準値',
     formula: 'HbA1c 5.5以下 / LDL 60〜119 / HDL 40以上 / 中性脂肪 30〜149 / AST・ALT 30以下 / γ-GTP 50以下 / 尿酸 7.0以下 / eGFR 60以上',
     note:
-      '表に併記している基準範囲の目安です。実際の基準値は検査施設・性別・年齢によって異なるため、' +
+      '表に併記している基準範囲の目安で、判定区分の「A(異常なし)」の範囲に合わせています。' +
+      '実際の基準値は検査施設・性別・年齢によって異なるため、' +
       'お手元の検査結果表の基準値をご確認ください。本アプリは判定や結果の解釈を行いません。',
     refs: [
       {
-        title: '検査表の見方(判定区分表)',
+        // 一覧ページには年度違いの判定区分表が並ぶので、現行版のPDFを直接指す
+        title: '判定区分(2026年4月1日改定) A「異常なし」の範囲',
         publisher: '日本人間ドック・予防医療学会',
-        url: 'https://www.ningen-dock.jp/other_inspection',
+        url: 'https://www.ningen-dock.jp/ningendock/wp-content/uploads/2026/02/2026hanteikijun.pdf',
+      },
+      {
+        title: '検査表の見方(判定区分表の一覧)',
+        publisher: '日本人間ドック・予防医療学会',
+        url: 'https://www.ningen-dock.jp/other_inspection/',
       },
     ],
   },
@@ -191,10 +213,11 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
     formula: '「きょうの処方箋」でカロリーをご飯の杯数に言い換えるときの換算値',
     note:
       '食品成分表の「めし・精白米」は100gあたり156kcalで、茶碗1杯(中盛り・約150g)ではおよそ234kcalです。' +
-      '本アプリは目安として240kcalを使っています。',
+      '本アプリは目安として240kcalを使っています。' +
+      '出典のデータベースで食品番号01088「こめ [水稲めし] 精白米 うるち米」を検索すると確認できます。',
     refs: [
       {
-        title: '日本食品標準成分表2020年版(八訂) 食品成分データベース',
+        title: '日本食品標準成分表(八訂)増補2023年 食品成分データベース',
         publisher: '文部科学省',
         url: 'https://fooddb.mext.go.jp/',
       },
