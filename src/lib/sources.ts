@@ -176,22 +176,23 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
   {
     id: 'bloodTest',
     heading: '血液検査の基準値',
-    formula: 'HbA1c 5.5以下 / LDL 60〜119 / HDL 40以上 / 中性脂肪 30〜149 / AST・ALT 30以下 / γ-GTP 50以下 / 尿酸 2.1〜7.0 / eGFR 60以上',
+    formula: 'HbA1c 5.5以下 / LDL 60〜119 / HDL 40以上 / 中性脂肪 30〜149 / AST・ALT 30以下 / γ-GTP 50以下 / 尿酸 2.1〜7.0 / eGFR 60.0以上',
     note:
-      '表に併記している基準範囲の目安で、判定区分の「A(異常なし)」の範囲に合わせています。' +
+      '表に併記している目安で、出典が示す「基準範囲」をそのまま転記しています。' +
       '実際の基準値は検査施設・性別・年齢によって異なるため、' +
       'お手元の検査結果表の基準値をご確認ください。本アプリは判定や結果の解釈を行いません。',
     refs: [
       {
-        // 一覧ページには年度違いの判定区分表が並ぶので、現行版のPDFを直接指す
-        title: '判定区分(2026年4月1日改定) A「異常なし」の範囲',
+        // 項目ごとの基準範囲がHTMLで読める。端末で開いてそのまま確認できるのでこちらを先に置く
+        title: '血液検査(検査項目ごとの基準範囲)',
         publisher: '日本人間ドック・予防医療学会',
-        url: 'https://www.ningen-dock.jp/ningendock/wp-content/uploads/2026/02/2026hanteikijun.pdf',
+        url: 'https://www.ningen-dock.jp/inspection_blood/',
       },
       {
-        title: '検査表の見方(判定区分表の一覧)',
+        // 一覧ページには年度違いの判定区分表が並ぶので、現行版のPDFを直接指す
+        title: '判定区分(2026年4月1日改定)',
         publisher: '日本人間ドック・予防医療学会',
-        url: 'https://www.ningen-dock.jp/other_inspection/',
+        url: 'https://www.ningen-dock.jp/ningendock/wp-content/uploads/2026/02/2026hanteikijun.pdf',
       },
     ],
   },

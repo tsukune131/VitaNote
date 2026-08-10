@@ -218,7 +218,7 @@ export const BLOOD_TEST_FIELDS: {
   { key: 'ggtp', label: 'γ-GTP', unit: 'U/L', ref: '50以下' },
   // 判定区分Aは下限付き。出典どおりに転記する(低い側も「異常なし」の外に出る)
   { key: 'uricAcid', label: '尿酸', unit: 'mg/dL', ref: '2.1〜7.0' },
-  { key: 'egfr', label: 'eGFR', unit: '', ref: '60以上' },
+  { key: 'egfr', label: 'eGFR', unit: 'mL/分/1.73㎡', ref: '60.0以上' },
 ];
 
 export interface Setting {
