@@ -57,6 +57,12 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
         publisher: 'American Journal of Clinical Nutrition',
         url: 'https://doi.org/10.1093/ajcn/51.2.241',
       },
+      {
+        // DOIの解決先は出版社の購読者向けページなので、誰でも読める抄録も併記する
+        title: '同論文の抄録(PubMed)',
+        publisher: 'National Library of Medicine',
+        url: 'https://pubmed.ncbi.nlm.nih.gov/2305711/',
+      },
     ],
   },
   {
@@ -154,10 +160,11 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
   {
     id: 'waist',
     heading: '腹囲の目安(男性85cm・女性90cm)',
-    formula: 'メタボリックシンドロームの診断で必須となるウエスト周囲径の基準値',
+    formula: '本アプリは腹囲を記録・表示するだけで、判定や診断は行いません。',
     note:
-      '本アプリは腹囲を記録・表示するだけで、メタボリックシンドロームの判定は行いません。' +
-      '診断は血圧・血糖・脂質の値と併せて医師が行うものです。',
+      '男性85cm・女性90cmは、メタボリックシンドロームの診断でウエスト周囲径に用いられる値です。' +
+      '参考として挙げているだけで、本アプリがこの値と比べて判定することはありません。' +
+      '診断は腹囲だけで決まるものではなく、血圧・血糖・脂質の値と併せて医師が行うものです。',
     refs: [
       {
         title: 'メタボリックシンドロームとは?(e-ヘルスネット)',
@@ -169,7 +176,7 @@ export const MEDICAL_SOURCES: MedicalSource[] = [
   {
     id: 'bloodTest',
     heading: '血液検査の基準値',
-    formula: 'HbA1c 5.5以下 / LDL 60〜119 / HDL 40以上 / 中性脂肪 30〜149 / AST・ALT 30以下 / γ-GTP 50以下 / 尿酸 7.0以下 / eGFR 60以上',
+    formula: 'HbA1c 5.5以下 / LDL 60〜119 / HDL 40以上 / 中性脂肪 30〜149 / AST・ALT 30以下 / γ-GTP 50以下 / 尿酸 2.1〜7.0 / eGFR 60以上',
     note:
       '表に併記している基準範囲の目安で、判定区分の「A(異常なし)」の範囲に合わせています。' +
       '実際の基準値は検査施設・性別・年齢によって異なるため、' +

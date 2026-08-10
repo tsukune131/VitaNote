@@ -67,6 +67,12 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
   return (
     <div className="card">
       <h2>きょうの処方箋</h2>
+      {/* 「処方箋」は手帳になぞらえた呼び名。規約でしか説明していないと
+          医師の処方と読まれかねないので、見出しのすぐ下でも断っておく */}
+      <p className="muted note" style={{ marginTop: 0 }}>
+        ※「処方箋」は手帳になぞらえた呼び名です。医師の処方や治療の指示ではなく、
+        あなたが設定した目標から機械的に逆算した、その日の目安です。
+      </p>
 
       {view.kind === 'need-record' && (
         <p className="muted" style={{ margin: 0 }}>

@@ -216,7 +216,8 @@ export const BLOOD_TEST_FIELDS: {
   { key: 'ast', label: 'AST', unit: 'U/L', ref: '30以下' },
   { key: 'alt', label: 'ALT', unit: 'U/L', ref: '30以下' },
   { key: 'ggtp', label: 'γ-GTP', unit: 'U/L', ref: '50以下' },
-  { key: 'uricAcid', label: '尿酸', unit: 'mg/dL', ref: '7.0以下' },
+  // 判定区分Aは下限付き。出典どおりに転記する(低い側も「異常なし」の外に出る)
+  { key: 'uricAcid', label: '尿酸', unit: 'mg/dL', ref: '2.1〜7.0' },
   { key: 'egfr', label: 'eGFR', unit: '', ref: '60以上' },
 ];
 

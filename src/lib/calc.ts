@@ -31,16 +31,9 @@ export function bmiCategory(v: number): string {
   return '肥満(4度)';
 }
 
-/**
- * メタボリックシンドロームの腹囲判定基準(男性85cm/女性90cm以上で該当)。
- * 出典は sources.ts の 'waist' を参照。
- */
-export const METABO_WAIST_THRESHOLD: Record<Sex, number> = { male: 85, female: 90 };
-
-/** 腹囲がメタボ基準に該当するか */
-export function isMetaboWaist(waistCm: number, sex: Sex): boolean {
-  return waistCm >= METABO_WAIST_THRESHOLD[sex];
-}
+// メタボリックシンドロームの腹囲判定(isMetaboWaist / METABO_WAIST_THRESHOLD)は削除した。
+// 画面からは一度も呼ばれておらず、規約と出典シートでは「判定は行いません」と明言している。
+// 判定ロジックがコードに残っていると、その宣言と食い違ううえ、うっかりUIに繋がる事故も招く。
 
 export function ageAt(birthDate: string, on: Date = new Date()): number {
   const b = new Date(birthDate + 'T00:00:00');
