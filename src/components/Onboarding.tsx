@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db, setActiveProfileId, type Profile } from '../db';
+import { bmi } from '../lib/calc';
+import { todayStr } from '../lib/date';
 import { LegalLink } from './LegalLink';
 import { ProfileForm } from './ProfileForm';
 import { UsageGuide } from './UsageGuide';
@@ -14,6 +17,16 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [targetWeight, setTargetWeight] = useState('');
   const [targetFat, setTargetFat] = useState('');
   const [targetDate, setTargetDate] = useState('');
+
+  // 低体重の警告を出すのに身長が要る。入力せずに進んだ人は身長が無いので判定しない
+  const created = useLiveQuery(
+    () => (profileId != null ? db.profiles.get(profileId) : undefined),
+    [profileId],
+  );
+  const targetKg = Number(targetWeight);
+  const targetBmi =
+    targetKg > 0 && created?.heightCm != null ? bmi(targetKg, created.heightCm) : undefined;
+  const targetUnderweight = targetBmi != null && targetBmi < 18.5;
 
   async function continueWithProfile(id: number) {
     await setActiveProfileId(id);
@@ -133,13 +146,22 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             </label>
             <label className="field field-fixed-date">
               目標達成日
+              {/* 過去の日付は「残り0日」となり逆算が破綻する。「あなた」タブと同じ制限をかける */}
               <input
                 type="date"
+                min={todayStr()}
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
               />
             </label>
           </div>
+          {/* 無理な目標を黙って受け取らない。「あなた」タブと同じ警告をこの画面にも出す */}
+          {targetUnderweight && (
+            <p className="goal-warning">
+              この目標体重はBMI{targetBmi?.toFixed(1)}で、低体重(18.5未満)にあたります。
+              設定はできますが、健康を損なうおそれがあります。医師にご相談ください。
+            </p>
+          )}
           <div className="row">
             <button onClick={() => void saveGoalAndContinue()}>設定してつづける</button>
             <button className="secondary" onClick={() => setStep('guide')}>

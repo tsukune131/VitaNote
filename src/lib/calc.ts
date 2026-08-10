@@ -180,14 +180,27 @@ export function stepsToKm(steps: number): number {
 }
 
 /**
+ * 歩行の想定速度(km/h)。
+ *
+ * メッツ表で3.0メッツが当たるのは「普通歩行(平地、67m/分)」= 時速約4.0km。
+ * 以前は時速4.8kmとしながら3.0メッツを当てていたが、その組み合わせはメッツ表の
+ * どの行にも無く、消費を約2割小さく見積もっていた。速度をメッツ値に合わせる。
+ * 出典は sources.ts の 'mets' を参照。
+ */
+export const WALK_SPEED_KMH = 4.0;
+
+/** 歩行のメッツ値(普通歩行)。WALK_SPEED_KMHと対で1つの表の行に対応する */
+export const WALK_METS = 3.0;
+
+/**
  * 歩数からの消費カロリー推定。
- * 歩幅0.7m・時速4.8km・歩行3.0METsとして kcal = METs × 体重 × 時間 × 1.05
+ * 歩幅0.7m・時速4.0km・普通歩行3.0METsとして kcal = METs × 体重 × 時間 × 1.05
  * METs値と換算式の出典は sources.ts の 'mets' を参照。
  */
 export function stepsToKcal(steps: number, weightKg: number): number {
   const km = stepsToKm(steps);
-  const hours = km / 4.8;
-  return 3.0 * weightKg * hours * 1.05;
+  const hours = km / WALK_SPEED_KMH;
+  return WALK_METS * weightKg * hours * 1.05;
 }
 
 /**
@@ -218,7 +231,7 @@ export function metsToKcal(mets: number, weightKg: number, minutes: number): num
 /** stepsToKcalの逆算。指定カロリー分を歩くのに必要な歩数 */
 export function kcalToSteps(kcal: number, weightKg: number): number {
   if (kcal <= 0 || weightKg <= 0) return 0;
-  return kcal / ((0.0007 / 4.8) * 3.0 * weightKg * 1.05);
+  return kcal / ((0.0007 / WALK_SPEED_KMH) * WALK_METS * weightKg * 1.05);
 }
 
 /**
@@ -247,6 +260,9 @@ export function suggestedSteps(kcal: number, weightKg: number | undefined): numb
 
 /**
  * ご飯茶碗1杯(中盛り、白米150g)のおおよそのカロリー。食事量の目安換算に使う。
- * 出典は sources.ts の 'rice' を参照。
+ *
+ * 食品成分表の「めし・精白米」100gあたり156kcal → 150gで234kcal。
+ * 食事プリセット(foodPresets.tsの「ご飯」)も235kcalなので、同じ食べ物に
+ * 2つの数字を持たないようここも235に揃えている。出典は sources.ts の 'rice' を参照。
  */
-export const RICE_BOWL_KCAL = 240;
+export const RICE_BOWL_KCAL = 235;

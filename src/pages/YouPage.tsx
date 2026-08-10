@@ -170,7 +170,7 @@ export function YouPage({ profile }: { profile: Profile }) {
         {/* BMIの判定も推定消費カロリーも医学的な計算なので、数字のすぐ下から出典に行けるようにする */}
         <p className="source-link" style={{ marginBottom: 0 }}>
           BMIの判定は日本肥満学会の肥満度分類、推定消費カロリーはMifflin-St
-          Jeor式による推定です。
+          Jeor式による推定です。体格や体調の評価は、この数値だけで判断せず医師にご相談ください。
           <SourcesLink focus="bmi" label="出典を見る" />
         </p>
       </div>

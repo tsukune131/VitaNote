@@ -21,6 +21,8 @@ import {
   suggestedSteps,
   tdee,
   totalKcalToGoal,
+  WALK_METS,
+  WALK_SPEED_KMH,
 } from './calc';
 
 describe('bmi', () => {
@@ -162,16 +164,16 @@ describe('suggestedSteps', () => {
     expect(suggestedSteps(200, 60)).toBeGreaterThan(0);
   });
 
-  it('境目は体重で決まる(60kgなら約275kcal)', () => {
-    // 10,000歩ぶんの消費は 60kg で 275.6kcal。その前後で表示が切り替わる
-    expect(stepsToKcal(MAX_SUGGESTED_STEPS, 60)).toBeCloseTo(275.6, 1);
-    expect(suggestedSteps(275, 60)).toBeLessThanOrEqual(MAX_SUGGESTED_STEPS);
-    expect(suggestedSteps(280, 60)).toBeUndefined();
+  it('境目は体重で決まる(60kgなら約331kcal)', () => {
+    // 10,000歩ぶんの消費は 60kg で 330.75kcal。その前後で表示が切り替わる
+    expect(stepsToKcal(MAX_SUGGESTED_STEPS, 60)).toBeCloseTo(330.75, 2);
+    expect(suggestedSteps(330, 60)).toBeLessThanOrEqual(MAX_SUGGESTED_STEPS);
+    expect(suggestedSteps(340, 60)).toBeUndefined();
   });
 
   it('上限を超える量は歩数で示さない', () => {
-    // 60kg女性が986kcalオーバー → 逆算では約36,000歩(約25km)
-    expect(kcalToSteps(986, 60)).toBeGreaterThan(30000);
+    // 60kg女性が986kcalオーバー → 逆算では約30,000歩(約21km)
+    expect(kcalToSteps(986, 60)).toBeGreaterThan(25000);
     expect(suggestedSteps(986, 60)).toBeUndefined();
     // 極端な目標でも数字が漏れない
     expect(suggestedSteps(483000, 70)).toBeUndefined();
@@ -217,12 +219,20 @@ describe('dailyDeficit', () => {
 });
 
 describe('stepsToKcal', () => {
-  it('10000歩・70kgで約322kcal', () => {
-    // 7km ÷ 4.8km/h = 1.458h, 3.0 × 70 × 1.458 × 1.05 ≈ 321.6
-    expect(stepsToKcal(10000, 70)).toBeCloseTo(321.6, 0);
+  it('10000歩・70kgで約386kcal', () => {
+    // 7km ÷ 4.0km/h = 1.75h, 3.0 × 70 × 1.75 × 1.05 ≈ 385.9
+    expect(stepsToKcal(10000, 70)).toBeCloseTo(385.9, 0);
   });
   it('0歩は0kcal', () => {
     expect(stepsToKcal(0, 70)).toBe(0);
+  });
+  it('前提の速度とメッツ値はメッツ表の同じ行から採る', () => {
+    // 3.0メッツ = 普通歩行(平地、67m/分)。67m/分 = 時速4.02km なので4.0を使う
+    expect(WALK_METS).toBe(3.0);
+    expect(WALK_SPEED_KMH).toBeCloseTo((67 * 60) / 1000, 1);
+  });
+  it('kcalToStepsはstepsToKcalの逆算になっている', () => {
+    expect(kcalToSteps(stepsToKcal(8000, 62), 62)).toBeCloseTo(8000, 6);
   });
 });
 

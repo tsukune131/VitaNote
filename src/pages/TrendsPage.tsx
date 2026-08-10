@@ -710,6 +710,9 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               <br />
               ※数値の意味や治療の判断は医師にご相談ください。
             </p>
+            <p className="source-link" style={{ marginBottom: 0 }}>
+              <SourcesLink focus="vitals" label="この画面の数値について" />
+            </p>
           </div>
         </>
       )}
@@ -719,8 +722,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       <div className="card">
         <h2>この画面の数値について</h2>
         <p className="muted" style={{ marginTop: 0 }}>
-          グラフに出る基礎代謝・消費カロリー・カロリー貯金は、公的機関の資料や学術文献の計算式に
-          基づく<strong>推定値</strong>です。本アプリは医療機器ではなく、診断・治療を行うものではありません。
+          この画面に出る数値は、記録した値そのものか、公的機関の資料や学術文献の計算式に
+          基づく<strong>推定値</strong>です(基礎代謝・消費カロリー・カロリー貯金は推定値、
+          体重・腹囲・血圧・血糖値・血液検査は記録した値そのもの)。
+          本アプリは医療機器ではなく、診断・治療を行うものではありません。
+          体調や持病、減量の進め方については、アプリの数値だけで判断せず医師などの専門家にご相談ください。
         </p>
         <p className="source-link" style={{ marginBottom: 0 }}>
           <SourcesLink label="計算式と基準値の出典を見る" />

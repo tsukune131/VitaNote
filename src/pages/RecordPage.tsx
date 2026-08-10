@@ -699,6 +699,7 @@ function MealSection({ profile, date }: { profile: Profile; date: string }) {
                 )}
                 <p className="muted food-note">
                   カロリーは一般的な目安です。店やレシピで変わります。
+                  <SourcesLink focus="food" label="出典を見る" />
                   <br />
                   ☆を押すとマイメニューに登録され、次回から検索なしで選べます。
                 </p>

@@ -81,6 +81,8 @@ export function SettingsPage({ profile }: { profile: Profile }) {
         <p className="muted" style={{ marginTop: 0 }}>
           BMI・推定消費カロリー・カロリー貯金などの数値は、公的機関の資料や学術文献の計算式に基づく
           推定値です。計算式と出典はいつでもここから確認できます。
+          本アプリは医療機器ではなく、病気の診断・治療・予防を目的としたものではありません。
+          体調や持病、減量の進め方については、アプリの数値だけで判断せず医師などの専門家にご相談ください。
         </p>
         <p className="legal-links" style={{ marginBottom: 0 }}>
           <SourcesLink label="数値の出典" />
