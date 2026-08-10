@@ -68,6 +68,14 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             <li>血圧・血糖値、健康診断の血液検査も記録</li>
             <li>推移をグラフでふりかえり</li>
           </ul>
+          {/* 1.4.1が求める「医師に相談するよう促すこと」。規約の中だけでなく、
+              最初に必ず通る画面に置く */}
+          <p className="muted note">
+            本アプリは記録のための道具で、病気の診断・治療・予防を行うものではありません。
+            表示される数値は一般的な計算式による推定値です。
+            <strong>体調や持病、減量や食事制限の進め方については、アプリの数値だけで判断せず、
+            医師などの専門家にご相談ください。</strong>
+          </p>
           <button onClick={() => setStep('profile')}>はじめる</button>
           <p className="muted" style={{ marginBottom: 0 }}>
             はじめると

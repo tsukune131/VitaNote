@@ -16,6 +16,8 @@ export interface DayStat {
   burn: number;
   /** カロリー貯金(消費−摂取)。食事と体重の記録が揃っている日のみ算出 */
   deficit?: number;
+  /** 推定基礎代謝量。勧める食事量の下限を決めるのに使う(プロフィールが揃った日のみ) */
+  bmr?: number;
   /** 夕食が記録済みか(kcalか時刻のどちらかが入っていれば済み)。その日の決着判定に使う */
   dinnerLogged: boolean;
 }
@@ -69,7 +71,7 @@ export async function getRecentDayStats(profile: Profile, windowDays: number): P
       meal != null && bmrKcal != null ? dailyDeficit(bmrKcal, burn, intake ?? 0) : undefined;
 
     const dinnerLogged = meal != null && (meal.dinner > 0 || !!meal.dinnerTime);
-    days.push({ date, weight: w?.kg, intake, burn, deficit, dinnerLogged });
+    days.push({ date, weight: w?.kg, intake, burn, deficit, bmr: bmrKcal, dinnerLogged });
   }
 
   return { days, weightDates: sortedWeights.map((w) => w.date) };

@@ -4,12 +4,15 @@ import {
   RICE_BOWL_KCAL,
   daysUntil,
   kcalToSteps,
+  minIntakeKcal,
   requiredDailyKcal,
+  safeRequiredForDay,
   stepsToKcal,
   totalKcalToGoal,
 } from '../lib/calc';
 import { getRecentDayStats } from '../lib/dailyStats';
-import { prescriptionView } from '../lib/prescription';
+import { prescriptionView, type PrescriptionView } from '../lib/prescription';
+import { SourcesLink } from './SourcesSheet';
 
 const WINDOW_DAYS = 7;
 
@@ -41,7 +44,14 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
   const showRequired = required != null && Number.isFinite(required) && required > 0;
   if (!showRequired) return null; // 目標未設定では「あと何」を計算できない
 
-  const view = prescriptionView(today?.deficit, required, today?.dinnerLogged ?? false);
+  // 目標をそのまま逆算すると食事量が極端に少ない指示になりうる。
+  // 勧める量が「基礎代謝または1,200kcalの高い方」を割らないところで頭打ちにする。
+  // 頭打ちできない(基礎代謝が推定できない)ときは逆算値を使わず、何を入れれば出るかだけ案内する。
+  const safe = safeRequiredForDay(required, today?.bmr, today?.burn);
+  const view: PrescriptionView =
+    safe == null
+      ? { kind: 'need-record' }
+      : prescriptionView(today?.deficit, safe.value, today?.dinnerLogged ?? false);
   // 基礎代謝(=貯金)の推定に必要な任意項目が揃っているか
   const canEstimate = profile.heightCm != null && !!profile.birthDate && !!profile.sex;
 
@@ -103,6 +113,24 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
           </p>
         </>
       )}
+
+      {/* 目標に無理があるときは黙って厳しい数字を出さず、頭打ちにしたことを伝える */}
+      {safe?.capped && today?.bmr != null && (
+        <p className="muted note">
+          ※この目標を達成日までに実現しようとすると、1日の食事量が
+          {Math.round(minIntakeKcal(today.bmr)).toLocaleString()}kcalを下回ってしまいます。
+          上の目安は、食事量がそこを下回らないところで止めています。
+          達成日を延ばすか目標体重を見直すことをおすすめします。
+          減量の進め方は医師にご相談ください。
+        </p>
+      )}
+
+      {/* 歩数・ご飯への換算はどれも推定式。数字を見せた場所から出典に行けるようにする */}
+      <p className="source-link" style={{ marginBottom: 0 }}>
+        歩数への換算はMETs法、ご飯の杯数は茶碗1杯240kcalとした推定です。体調や持病に応じて、
+        無理のない範囲で。判断に迷うときは医師にご相談ください。
+        <SourcesLink focus="mets" label="出典を見る" />
+      </p>
     </div>
   );
 }

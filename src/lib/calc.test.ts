@@ -8,10 +8,14 @@ import {
   daysUntil,
   isMetaboWaist,
   kcalToSteps,
+  maxSafeDailyDeficit,
   metsToKcal,
+  minIntakeKcal,
   pickReferenceWeight,
   profileBmr,
   requiredDailyKcal,
+  safeRequiredDailyKcal,
+  safeRequiredForDay,
   stepsToKcal,
   tdee,
   totalKcalToGoal,
@@ -74,9 +78,84 @@ describe('profileBmr', () => {
   });
 });
 
+describe('食事量の下限(無理な目標を頭打ちにする)', () => {
+  it('下限は基礎代謝と1,200kcalの高い方', () => {
+    expect(minIntakeKcal(1568)).toBe(1568);
+    expect(minIntakeKcal(1000)).toBe(1200); // 小柄・高齢で基礎代謝が低い場合
+  });
+
+  it('指示してよい貯金は「消費 − 下限」まで', () => {
+    // 基礎代謝1,568kcalなら座位消費1,881.6kcal。下限1,568を残すと313.6kcalが上限
+    expect(maxSafeDailyDeficit(1568)).toBeCloseTo(313.6, 1);
+    // 歩いた分だけ上限は緩む
+    expect(maxSafeDailyDeficit(1568, 300)).toBeCloseTo(613.6, 1);
+  });
+
+  it('下限を割る目標は頭打ちにし、cappedを立てる', () => {
+    // 70kg→65kgを30日(必要1,167kcal/日)は、そのままだと食事が714kcalになる
+    const capped = safeRequiredDailyKcal(1167, 1568);
+    expect(capped.capped).toBe(true);
+    expect(capped.value).toBeCloseTo(313.6, 1);
+  });
+
+  it('極端な目標でも歯止めが効く', () => {
+    // 70kg→1kgを1日: 逆算では483,000kcal/日
+    const capped = safeRequiredDailyKcal(483000, 1568);
+    expect(capped.value).toBeCloseTo(313.6, 1);
+  });
+
+  it('無理のない目標はそのまま通す', () => {
+    const ok = safeRequiredDailyKcal(200, 1568);
+    expect(ok).toEqual({ value: 200, capped: false });
+  });
+
+  it('消費が下限に届かない場合は貯金を求めない(0で頭打ち)', () => {
+    // 基礎代謝900kcal → 座位消費1,080kcalに対し下限は1,200kcal
+    expect(maxSafeDailyDeficit(900)).toBe(0);
+    expect(safeRequiredDailyKcal(500, 900)).toEqual({ value: 0, capped: true });
+  });
+});
+
+describe('safeRequiredForDay', () => {
+  // 逆算値を画面に出す箇所はすべてこれを通す。頭打ちできない状況では
+  // 生の逆算値に落ちず、undefinedを返して画面に「—」を出させるのが肝心
+  it('基礎代謝が分かれば頭打ちした値を返す', () => {
+    const safe = safeRequiredForDay(1167, 1568);
+    expect(safe?.capped).toBe(true);
+    expect(safe?.value).toBeCloseTo(313.6, 1);
+  });
+
+  it('その日の活動量ぶんだけ上限が緩む', () => {
+    // 歩いた日は消費が増えるので、同じ下限でも貯金の上限が上がる
+    const safe = safeRequiredForDay(1167, 1568, 300);
+    expect(safe?.capped).toBe(true);
+    expect(safe?.value).toBeCloseTo(613.6, 1);
+  });
+
+  it('基礎代謝が推定できなければ数字を出さない', () => {
+    expect(safeRequiredForDay(1167, undefined)).toBeUndefined();
+    // 483,000kcal/日のような極端な逆算値も、頭打ちできない以上は伏せる
+    expect(safeRequiredForDay(483000, undefined)).toBeUndefined();
+  });
+
+  it('逆算値そのものが使えないときも数字を出さない', () => {
+    expect(safeRequiredForDay(undefined, 1568)).toBeUndefined();
+    // 達成日が今日以前だとrequiredDailyKcalはInfinityを返す
+    expect(safeRequiredForDay(Infinity, 1568)).toBeUndefined();
+    expect(safeRequiredForDay(NaN, 1568)).toBeUndefined();
+    // 目標達成済み(残り0kcal)は「必要な消費」ではない
+    expect(safeRequiredForDay(0, 1568)).toBeUndefined();
+    expect(safeRequiredForDay(-100, 1568)).toBeUndefined();
+  });
+
+  it('無理のない目標はそのまま通す', () => {
+    expect(safeRequiredForDay(200, 1568)).toEqual({ value: 200, capped: false });
+  });
+});
+
 describe('goal calculations', () => {
-  it('体重差×7200kcal', () => {
-    expect(totalKcalToGoal(70, 65)).toBe(5 * 7200);
+  it('体重差×7000kcal', () => {
+    expect(totalKcalToGoal(70, 65)).toBe(5 * 7000);
   });
   it('目標達成済みなら0', () => {
     expect(totalKcalToGoal(60, 65)).toBe(0);

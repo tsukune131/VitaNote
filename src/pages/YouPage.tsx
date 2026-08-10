@@ -3,12 +3,16 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
 import { ProfileForm } from '../components/ProfileForm';
+import { SourcesLink } from '../components/SourcesSheet';
+import { todayStr } from '../lib/date';
 import {
   bmi,
   bmiCategory,
   daysUntil,
+  minIntakeKcal,
   profileBmr,
   requiredDailyKcal,
+  safeRequiredForDay,
   tdee,
   totalKcalToGoal,
 } from '../lib/calc';
@@ -68,8 +72,18 @@ export function YouPage({ profile }: { profile: Profile }) {
   const hasGoal = targetKg > 0 && targetDate !== '' && weightKg != null;
   const totalKcal = hasGoal ? totalKcalToGoal(weightKg, targetKg) : undefined;
   const remainDays = hasGoal ? daysUntil(targetDate) : undefined;
-  const dailyKcal =
+  const rawDailyKcal =
     totalKcal != null && remainDays != null ? requiredDailyKcal(totalKcal, remainDays) : undefined;
+  // 逆算をそのまま出すと、達成日が近いほど食事量が極端に少ない目安になる。
+  // 「きょうの処方箋」と同じ下限で頭打ちにし、頭打ちにしたことをこの場で伝える。
+  // 基礎代謝が推定できず頭打ちできないときは、生の逆算値に落とさず「—」にする
+  const safeDaily = safeRequiredForDay(rawDailyKcal, bmrValue);
+  const dailyKcal = safeDaily?.value;
+
+  // 目標体重がBMI18.5(低体重)を下回らないか。身長が未入力なら判定しない
+  const targetBmi =
+    targetKg > 0 && profile.heightCm != null ? bmi(targetKg, profile.heightCm) : undefined;
+  const targetUnderweight = targetBmi != null && targetBmi < 18.5;
 
   const [goalSaved, setGoalSaved] = useState(false);
 
@@ -153,6 +167,12 @@ export function YouPage({ profile }: { profile: Profile }) {
             いずれも任意で、「編集」からいつでも入力・削除できます。入力しなくても記録機能はすべて使えます。
           </p>
         )}
+        {/* BMIの判定も推定消費カロリーも医学的な計算なので、数字のすぐ下から出典に行けるようにする */}
+        <p className="source-link" style={{ marginBottom: 0 }}>
+          BMIの判定は日本肥満学会の肥満度分類、推定消費カロリーはMifflin-St
+          Jeor式による推定です。
+          <SourcesLink focus="bmi" label="出典を見る" />
+        </p>
       </div>
 
       <div className="card">
@@ -196,8 +216,10 @@ export function YouPage({ profile }: { profile: Profile }) {
         <div className="row" style={{ alignItems: 'flex-end' }}>
           <label className="field field-fixed-date">
             達成日
+            {/* 過去の日付は「残り0日」となり逆算が破綻するので、今日より前は選ばせない */}
             <input
               type="date"
+              min={todayStr()}
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
             />
@@ -235,7 +257,7 @@ export function YouPage({ profile }: { profile: Profile }) {
               </div>
             )}
             <div className="stat">
-              <div className="label">必要な総消費カロリー(×7200)</div>
+              <div className="label">必要な総消費カロリー(×7,000)</div>
               <div className="value">
                 {Math.round(totalKcal).toLocaleString()}
                 <small> kcal</small>
@@ -251,7 +273,9 @@ export function YouPage({ profile }: { profile: Profile }) {
             <div className="stat">
               <div className="label">必要1日消費カロリー</div>
               <div className="value">
-                {Number.isFinite(dailyKcal) ? Math.round(dailyKcal).toLocaleString() : '—'}
+                {dailyKcal != null && Number.isFinite(dailyKcal)
+                  ? Math.round(dailyKcal).toLocaleString()
+                  : '—'}
                 <small> kcal/日</small>
               </div>
             </div>
@@ -261,6 +285,39 @@ export function YouPage({ profile }: { profile: Profile }) {
           <p className="muted" style={{ marginBottom: 0 }}>
             必要1日消費カロリーは、運動を増やすことでも摂取カロリーを抑えることでも達成できます。
             日々の達成状況は「ふりかえり」タブの消費・貯金で確認できます。
+          </p>
+        )}
+        {/* 頭打ちにできない数字は出さない。何を入れれば出るのかだけを伝える */}
+        {hasGoal && totalKcal != null && dailyKcal == null && (
+          <p className="muted note" style={{ marginBottom: 0 }}>
+            ※必要1日消費カロリーは、勧める食事量が安全な下限を下回らないか確かめてから表示します。
+            その確認には推定基礎代謝量が要るため、上の「編集」から身長・生年月日・性別
+            (いずれも任意)を入力すると計算されます。
+          </p>
+        )}
+        {/* 無理な目標を黙って受け取らない。保存は妨げず、何が起きるかを伝える */}
+        {safeDaily?.capped && bmrValue != null && (
+          <p className="goal-warning">
+            この達成日を守ろうとすると、1日の食事量が
+            {Math.round(minIntakeKcal(bmrValue)).toLocaleString()}kcalを下回ってしまいます。
+            アプリが出す目安は食事量がそこを下回らないところで止めているため、
+            この目標のままでは達成日に届きません。達成日を延ばすか、目標体重を見直してください。
+            減量の進め方は医師にご相談ください。
+            <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
+          </p>
+        )}
+        {targetUnderweight && (
+          <p className="goal-warning">
+            この目標体重はBMI{targetBmi?.toFixed(1)}で、低体重(18.5未満)にあたります。
+            設定はできますが、健康を損なうおそれがあります。医師にご相談ください。
+            <SourcesLink focus="bmi" label="BMIの判定基準と出典" />
+          </p>
+        )}
+        {hasGoal && totalKcal != null && (
+          <p className="source-link">
+            体重1kgあたり7,000kcalとして逆算しています。減量・食事制限は体調や持病に応じて
+            医師にご相談のうえ行ってください。
+            <SourcesLink focus="fatKcal" label="出典を見る" />
           </p>
         )}
         {hasGoal && remainDays === 0 && totalKcal != null && totalKcal > 0 && (

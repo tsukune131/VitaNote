@@ -5,6 +5,7 @@ import { LegalLink } from '../components/LegalLink';
 import { MedicationSettings } from '../components/MedicationSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { ProBadge, ProLock, ProSheet } from '../components/ProGate';
+import { SourcesLink } from '../components/SourcesSheet';
 import { UsageGuide } from '../components/UsageGuide';
 import { usePro } from '../lib/pro';
 
@@ -77,7 +78,13 @@ export function SettingsPage({ profile }: { profile: Profile }) {
       {/* 規約類は記録の邪魔にならないよう、アプリの設定と同じ場所にまとめる */}
       <div className="card">
         <h2>このアプリについて</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          BMI・推定消費カロリー・カロリー貯金などの数値は、公的機関の資料や学術文献の計算式に基づく
+          推定値です。計算式と出典はいつでもここから確認できます。
+        </p>
         <p className="legal-links" style={{ marginBottom: 0 }}>
+          <SourcesLink label="数値の出典" />
+          ・
           <LegalLink doc="privacy" />
           ・
           <LegalLink doc="terms" />

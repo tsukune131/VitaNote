@@ -45,24 +45,36 @@ const BORDER = '#e0e2da';
 
 const FONT = 'Yu Gothic UI, Meiryo, Hiragino Sans, sans-serif';
 
-/** 帯の高さ(基準の版面での値)。スクリーンショットはこの下に置く */
-const BASE_BAND = 430;
-/** 載せるスクリーンショットの幅(元は1206px。少し縮めて余白を作る) */
-const BASE_SHOT_W = 1080;
+/**
+ * 帯の高さ(基準の版面での値)。スクリーンショットはこの下に置く。
+ * 見出しを2行に割って大きく見せるぶん、以前より厚くとってある。
+ */
+const BASE_BAND = 770;
+/**
+ * 載せるスクリーンショットの幅(元は1206px)。
+ * 帯を主役にしたいので、画面そのものは小さめに置いて周りに紙を残す。
+ */
+const BASE_SHOT_W = 900;
 
 /**
+ * lead / punch は見出しの1行目と2行目。2行に割って、言いたいほう(punch)だけを
+ * 大きく朱色にする。1本の <text> の中で色を変えると版面の中央揃えが崩れるので、
+ * 行ごとに分けて中央に置いている。
+ *
  * top/bottom は元画像の高さに対する割合で、切り出す範囲。
  * 既定でステータスバー(時刻・電池)を落とす。アプリの中身だけを見せたいので、
  * 端末の情報は要らない。空白が続く画面は bottom で詰める。
  */
 const SHOTS = [
-  { file: 'IMG_2422.PNG', title: '体重とお薬を、1冊にまとめて', sub: '朝の体重も、飲んだお薬も、同じ手帳に' },
-  { file: 'IMG_2423.PNG', title: '飲んだかどうかを、その場で', sub: '食前・食後、週1回や月1回のお薬にも', top: 0.062 },
-  { file: 'IMG_2430.PNG', title: '続けた分だけ、線になる', sub: '体重と腹囲を重ねて、1か月をひと目で' },
-  { file: 'IMG_2427.PNG', title: '1か月を、1日1行で見渡す', sub: '歩数は自動。通院やジムの予定も書ける' },
+  // 1枚目は一覧で最初に目に入る。機能ではなくアプリ全体の約束を置く。
+  // 「書きたいものだけでいい」は、続けられるか不安な人に向けた一番の口説き文句
+  { file: 'IMG_2422.PNG', lead: 'バラバラだった記録が、', punch: '1冊のノートに', sub: '体重・食事・お薬・健診。書きたいものだけでいい' },
+  { file: 'IMG_2423.PNG', lead: '「飲んだっけ？」を、', punch: 'もう迷わない', sub: '食前・食後、週1回・月1回も。翌日も自動で引き継ぎ', top: 0.062 },
+  { file: 'IMG_2430.PNG', lead: '毎朝の1行が、', punch: '1本の線になる', sub: '体重・腹囲・体脂肪率・歩数をグラフで' },
+  { file: 'IMG_2427.PNG', lead: '健康の記録が、', punch: 'そのまま予定表に', sub: '通院やジムの予定を1日1行でメモ。歩数はiPhone連携' },
   // 表の下は空くが、切り詰めると表そのものが途中で切れて据わりが悪い。
   // アプリの実際の見え方でもあるので、そのまま全画面で見せる
-  { file: 'IMG_2421.PNG', title: '健診の数値も、同じ手帳に', sub: '血液検査と血圧・血糖値(Pro)' },
+  { file: 'IMG_2421.PNG', lead: '健診でもらった数値も、', punch: '同じノートに', sub: '血液検査9項目と血圧・血糖値(Pro・買い切り)' },
 ];
 
 const DEFAULT_TOP = 0.045;
@@ -84,19 +96,47 @@ function background(W, H) {
   );
 }
 
-/** 上の帯: 見出し・小さな添え書き・朱色の下線 */
-function caption(title, sub, W, BAND) {
+/**
+ * 文字列のおおよその幅。全角は1文字ぶん、半角はその半分強で数える。
+ * 添え書きを囲む札の幅を決めるだけなので、この精度で足りる。
+ */
+function textWidth(s, size) {
+  let n = 0;
+  for (const ch of s) n += /[\x20-\x7e]/.test(ch) ? 0.55 : 1;
+  return n * size;
+}
+
+/**
+ * 上の帯。目に入る順に、通し番号の丸 → 前置き → 言いたいこと → 添え書き。
+ * 2行目だけを大きく朱色にして、紙の落ち着きは残したままメリハリを付ける。
+ */
+function caption({ lead, punch, sub }, no, W, BAND) {
   // 版面が小さいほうでは、余白も文字も同じ比で縮める
   const k = W / BASE_W;
   const r = (n) => Math.round(n * k);
+  const cx = W / 2;
+
+  // 添え書きの札。文字幅に合わせて左右に同じ余白を付ける
+  const subSize = r(46);
+  const padX = r(40);
+  const pillW = Math.round(textWidth(sub, subSize)) + padX * 2;
+  const pillH = r(98);
+  const pillY = r(650) - Math.round(pillH / 2);
+
   return Buffer.from(
     `<svg width="${W}" height="${BAND}" xmlns="http://www.w3.org/2000/svg">
-      <text x="${W / 2}" y="${r(196)}" font-family="${FONT}" font-size="${r(70)}" font-weight="700"
-            fill="${INK}" text-anchor="middle">${esc(title)}</text>
-      <line x1="${W / 2 - r(60)}" y1="${r(238)}" x2="${W / 2 + r(60)}" y2="${r(238)}"
-            stroke="${ACCENT}" stroke-width="${r(5)}" stroke-linecap="round"/>
-      <text x="${W / 2}" y="${r(308)}" font-family="${FONT}" font-size="${r(38)}"
-            fill="${MUTED}" text-anchor="middle">${esc(sub)}</text>
+      <circle cx="${cx}" cy="${r(160)}" r="${r(120)}" fill="${ACCENT}"/>
+      <text x="${cx}" y="${r(200)}" font-family="${FONT}" font-size="${r(108)}" font-weight="700"
+            fill="${PAPER}" text-anchor="middle">${no}</text>
+      <text x="${cx}" y="${r(400)}" font-family="${FONT}" font-size="${r(70)}" font-weight="600"
+            fill="${MUTED}" text-anchor="middle">${esc(lead)}</text>
+      <text x="${cx}" y="${r(530)}" font-family="${FONT}" font-size="${r(112)}" font-weight="700"
+            fill="${ACCENT}" text-anchor="middle">${esc(punch)}</text>
+      <rect x="${cx - pillW / 2}" y="${pillY}" width="${pillW}" height="${pillH}"
+            rx="${Math.round(pillH / 2)}" ry="${Math.round(pillH / 2)}"
+            fill="${CARD}" stroke="${BORDER}" stroke-width="2"/>
+      <text x="${cx}" y="${pillY + Math.round(pillH / 2 + subSize * 0.36)}" font-family="${FONT}"
+            font-size="${subSize}" fill="${INK}" text-anchor="middle">${esc(sub)}</text>
     </svg>`,
   );
 }
@@ -161,13 +201,14 @@ for (const { W, H, dir } of SIZES) {
       .png()
       .toBuffer();
 
-    // 縦は帯の下の余白に対して中央。短い画面でも据わりが悪くならない
-    const top = BAND + Math.round((area - visibleH) / 2);
+    // 縦は帯の下の余白に対して中央。ただし空きすぎると帯と画面が離れて見えるので、
+    // 帯の直下に空ける分には上限を設ける(余った紙は下にまわす)
+    const top = BAND + Math.min(Math.round((area - visibleH) / 2), Math.round((80 * W) / BASE_W));
 
     const out = `${dir}/${String(i + 1).padStart(2, '0')}-${shot.file.replace(/\.PNG$/i, '')}.png`;
     await sharp(background(W, H))
       .composite([
-        { input: caption(shot.title, shot.sub, W, BAND), top: 0, left: 0 },
+        { input: caption(shot, i + 1, W, BAND), top: 0, left: 0 },
         { input: card, top, left: Math.round((W - SHOT_W) / 2) },
       ])
       .removeAlpha() // 3チャンネル(RGB)で書き出す。アルファ付きは弾かれる
@@ -175,6 +216,6 @@ for (const { W, H, dir } of SIZES) {
       .toFile(out);
 
     const check = await sharp(out).metadata();
-    console.log(`${out}  ${check.width}x${check.height}  ${check.channels}ch  ${shot.title}`);
+    console.log(`${out}  ${check.width}x${check.height}  ${check.channels}ch  ${shot.lead}${shot.punch}`);
   }
 }

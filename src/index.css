@@ -1342,3 +1342,74 @@ body.sheet-open {
   font-size: 13px;
   padding: 24px 8px;
 }
+
+/* ---- 数値の出典(シートの中身) ---- */
+
+.source {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 14px;
+}
+
+.source h3 {
+  margin-top: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* 計算式はそのまま読ませたいので、折り返しても崩れない等幅で組む */
+.source-formula {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+.source-refs {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.source-refs li + li {
+  margin-top: 8px;
+}
+
+.source-publisher {
+  display: block;
+  color: var(--muted);
+}
+
+/* URLは文字としても読めるようにする(リンクが開けない場所でも出典として成立させる) */
+.source-url {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+/* 出典への入口。本文の流れを乱さないよう小さく、しかし必ず見えるところに置く */
+.source-link {
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+/* 無理のある目標を伝える注意書き。読み飛ばされては意味がないので、
+   注記(.note)より一段強く、しかし警告色で埋め尽くさない程度に立てる */
+.goal-warning {
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.goal-warning .linklike {
+  margin-left: 4px;
+}

@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Profile } from '../db';
-import { daysUntil, requiredDailyKcal, totalKcalToGoal } from '../lib/calc';
+import { daysUntil, requiredDailyKcal, safeRequiredForDay, totalKcalToGoal } from '../lib/calc';
 import { getRecentDayStats } from '../lib/dailyStats';
 import { todayStr } from '../lib/date';
 import { calcStreak } from '../lib/streak';
+import { SourcesLink } from './SourcesSheet';
 
 const WINDOW_DAYS = 7;
 
@@ -58,25 +59,34 @@ export function StreakSummary({ profile }: { profile: Profile }) {
   const todayDeficit = days.at(-1)?.deficit;
 
   const latestWeight = recordedWeights.at(-1)?.weight;
-  const required =
+  const rawRequired =
     profile.targetWeightKg != null && profile.targetDate && latestWeight != null
       ? requiredDailyKcal(
           totalKcalToGoal(latestWeight, profile.targetWeightKg),
           daysUntil(profile.targetDate),
         )
       : undefined;
-  const showRequired = required != null && Number.isFinite(required) && required > 0;
+  // 「きょうの処方箋」と同じ日・同じ活動量で頭打ちにする。
+  // ここだけ生の逆算値を出すと、同じタブの上下で目標が食い違って見える
+  const today = days.at(-1);
+  const safe = safeRequiredForDay(rawRequired, today?.bmr, today?.burn);
+  const required = safe?.value;
+  const showRequired = required != null && required > 0;
+  // 達成日数も、画面に出している目標(頭打ち後)と同じ数字で数える
   const achievedDays = showRequired ? deficits.filter((d) => d.deficit >= required).length : undefined;
 
   if (streak.count === 0 && recordedWeights.length === 0) return null;
 
   const percent = showRequired && todayDeficit != null ? (todayDeficit / required) * 100 : undefined;
+  const hasGoal = profile.targetWeightKg != null && !!profile.targetDate;
   const message = !showRequired
-    ? '「あなた」タブで目標を設定すると進捗が見えます'
+    ? !hasGoal
+      ? '「あなた」タブで目標を設定すると進捗が見えます'
+      : latestWeight == null
+        ? '体重を記録すると目標の進捗が見えます'
+        : '「あなた」タブで身長・生年月日・性別(任意)を入れると目標の進捗が見えます'
     : todayDeficit == null
-      ? profile.heightCm != null && profile.birthDate && profile.sex
-        ? '食事と体重を記録すると貯金が見えます'
-        : '「あなた」タブで身長・生年月日・性別(任意)を入れると貯金が見えます'
+      ? '食事と体重を記録すると貯金が見えます'
       : todayDeficit >= required
         ? 'きょうの目標を達成しました!'
         : `目標まであと ${Math.round(required - todayDeficit).toLocaleString()} kcal`;
@@ -131,6 +141,21 @@ export function StreakSummary({ profile }: { profile: Profile }) {
           </div>
         )}
       </div>
+      {/* 頭打ちにした数字を黙って出さない。「きょうの処方箋」と同じ理由を同じ言葉で伝える */}
+      {safe?.capped && (
+        <p className="muted note" style={{ marginBottom: 0 }}>
+          ※この目標を達成日までに実現しようとすると、1日の食事量が安全な下限を下回ってしまいます。
+          上の目標は、食事量がそこを下回らないところで止めた数字です。
+          達成日を延ばすか目標体重を見直すことをおすすめします。減量の進め方は医師にご相談ください。
+          <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
+        </p>
+      )}
+      {/* 貯金という推定値を出しているカードなので、出典と医師相談は条件を付けずに置く(1.4.1) */}
+      <p className="source-link" style={{ marginBottom: 0 }}>
+        「貯金」は 基礎代謝×1.2 + 歩数・運動の推定消費 − 摂取カロリー で求めた推定値です。
+        減量の進め方は、体調や持病に応じて医師にご相談ください。
+        <SourcesLink focus="fatKcal" label="出典を見る" />
+      </p>
     </div>
   );
 }

@@ -62,8 +62,9 @@ SelfCareNote
 ■ 振り返る
 ・体重と腹囲を重ねた折れ線、体脂肪率、摂取カロリー、歩数のグラフ
 ・「カロリー貯金」= その日に使ったカロリー − 食べたカロリー。
-　貯金が約7,200kcalたまるごとに体重が1kg減る計算です
-　(体脂肪1kg≒7,200kcalは厚生労働省 e-ヘルスネットの記載に基づく目安です)
+　貯金が約7,000kcalたまるごとに体重が1kg減る計算です
+　(体脂肪1kg≒7,000kcalは厚生労働省「健康づくりのための身体活動・運動ガイド2023」に基づく目安です)
+・計算式と基準値の出典は、アプリ内の「数値の出典」からいつでも確認できます
 ・1か月を1日1行で見渡すカレンダー。その日のメモも一緒に残せます
 
 ■ 書く楽しさ
@@ -72,7 +73,7 @@ SelfCareNote
 ■ SelfCareNote Pro(買い切り)
 健診や生活習慣病の数値まで管理したい方への追加機能です。
 ・血液検査(HbA1c、LDL、HDL、中性脂肪、AST、ALT、γ-GTP、尿酸、eGFR)を検査日ごとに記録し、年ごとの表で振り返る
-・血圧・血糖値の記録とグラフ
+・血圧・血糖値の記録とグラフ(ご家庭の血圧計などで測った値を書き写して記録します。iPhoneが測定するわけではありません)
 一度購入すれば期限はありません。購入しなくても、体重・食事・歩数・お薬の記録はすべてお使いいただけます。
 
 ■ データについて
@@ -85,6 +86,8 @@ SelfCareNote
 
 ※本アプリは記録が主目的であり、病気の診断・治療・予防を目的としたものではありません。
 　数値の見方や体調については、医師・薬剤師にご相談ください。
+※減量や食事制限は、体調や持病に応じて医師にご相談のうえ行ってください。
+　目標から逆算した食事量が極端に少なくなる場合は、アプリ側で歯止めをかけて表示します。
 ```
 
 ## キーワード(100字以内、カンマ区切り・スペースなし)
@@ -285,6 +288,17 @@ The purchase enables recording of blood test results and blood pressure
 
 ・本アプリは記録のための道具であり、診断・治療・予防を目的としたものでは
 　ありません。お薬の効き目や飲み合わせに関する助言は行いません。
+
+・血圧・血糖値は、ご自身で測定された値を手入力で記録する機能です。
+　端末のセンサーによる測定は行っておらず、測定機能をうたってもいません。
+
+・健康に関する数値の計算式と出典は、アプリ内「設定」タブ →
+　「このアプリについて」→「数値の出典」、および「ふりかえり」タブの末尾から
+　ご確認いただけます。
+
+・目標体重と達成日から逆算した食事量が極端に少なくなる場合は、
+　推定基礎代謝量または1,200kcalの高い方を下回らないところで頭打ちにし、
+　目標に無理がある旨と医師への相談を画面に表示します。
 ```
 
 ---
@@ -384,6 +398,154 @@ treat or prevent any disease.
 ```
 
 日本語で返信する場合も内容は同じ。画面名はそのまま日本語で書けばよい。
+
+**注意(2026-08-10追記):** この回で示した e-ヘルスネットのURL
+`www.e-healthnet.mhlw.go.jp` は、その後ドメインごと廃止されており到達しない。
+コンテンツは「健康日本21アクション支援システム」(kennet.mhlw.go.jp)に移設されている。
+また移設先の該当ページに7,200kcalの記載はなく、厚労省の公式な数字は約7,000kcalだった。
+2回目のリジェクト対応で7,000kcalに改め、出典も差し替えている(下記)。
+
+## 2回目のリジェクトと対応(2026-08-10 / Submission 5f3fff25-b52d-48a9-a8be-de292bdfe83e)
+
+Version 1.0 (43) / iPad Air 11-inch (M4) で審査。
+
+### Guideline 1.4.1 — 医学的情報に出典がない
+
+「ふりかえり」タブに健康・医学に関する計算があるのに、出典(ソースへのリンク)が
+アプリ内に無い、という指摘。前回(2.1)は説明文の根拠を審査への返信で答えたが、
+今回は**利用者が見つけられる形でアプリ内に出典を置くこと**が求められている。
+
+**直したこと:**
+
+- `src/lib/sources.ts` に、表示する数値ごとの計算式・前提・出典(発行元/題名/URL)を集約
+- 「数値の出典」シート(`src/components/SourcesSheet.tsx`)を追加。URLは文字としても見せ、
+  タップすると端末のブラウザで開く
+  - シートはiframeではなくReactで描く。iframeの中の外部リンクはCapacitorの
+    `WebViewDelegationHandler` が「トップレベル遷移でない」と判断して素通しするため、
+    シートの中で外部サイトに飛んで戻れなくなる。本文と同じフレームなら
+    `UIApplication.shared.open` で端末のブラウザに渡される
+- 出典への入口を、数値を見せている場所すべてに配置
+  - ふりかえり: 末尾に「この画面の数値について」カード(どのグラフでも必ず見える)、
+    カロリー貯金の説明、血液検査の基準値
+  - あなた: BMI・推定消費カロリーの下、目標の逆算の下
+  - きょう: きょうの処方箋、運動での消費カロリー
+  - 設定: このアプリについて
+- 体脂肪1kgの換算を **7,200 → 7,000kcal** に変更。7,200は公的機関に出典が無く、
+  厚労省「健康づくりのための身体活動・運動ガイド2023」情報シートに
+  「体脂肪1kgを減らすために必要なエネルギー量は約7,000kcalである」と明記があるため
+- 利用規約2項の計算式・出典と、ストア説明文の数値を追随して更新
+
+**掲載した出典(2026-08-11 到達確認済み):**
+
+| アプリの数値 | 出典 |
+|---|---|
+| 基礎代謝(Mifflin-St Jeor式) | Am J Clin Nutr. 1990;51(2):241-247 / https://doi.org/10.1093/ajcn/51.2.241 |
+| 推定消費カロリー(活動レベル) | 厚労省「日本人の食事摂取基準(2025年版)」 |
+| 体脂肪1kg≒7,000kcal | 厚労省「身体活動・運動ガイド2023」情報シート(kennet.mhlw.go.jp) |
+| 歩数・運動(METs法) | 国立健康・栄養研究所『身体活動のメッツ(METs)表』改訂第2版 |
+| BMIと肥満度分類 | 厚労省 e-ヘルスネット「BMI」/ 日本肥満学会 |
+| 腹囲(男85/女90) | 厚労省 e-ヘルスネット「メタボリックシンドロームとは?」 |
+| 血液検査の基準値 | 日本人間ドック・予防医療学会「検査表の見方」 |
+| ご飯茶碗1杯≒240kcal | 文科省 食品成分データベース |
+
+### Guideline 1.4 全体の予防的な見直し(指摘は受けていないが同時に直した)
+
+1.4.1の指摘を機に1.4全体を実装と突き合わせ、**指摘より重い問題**が見つかった。
+
+**1. 目標から逆算した食事量に下限が無かった(1.4.1 / 1.4.5)**
+
+「きょうの処方箋」は目標体重と達成日を機械的に割り算していたため、
+ごく普通の目標でも危険な指示が出ていた。
+
+| 条件 | 必要1日貯金 | 「食べられます」と表示していた量 |
+|---|---|---|
+| 70kg→65kg / 30日、170cm 40歳男性 | 1,167kcal | 714kcal |
+| 55kg→50kg / 30日、158cm 30歳女性 | 1,167kcal | **305kcal** |
+| 70kg→1kg / 1日 | 483,000kcal | 「14,961,913歩 歩け」 |
+
+対応: 勧める1日の食事量の下限を **max(推定基礎代謝量, 1,200kcal)** とし、
+これを割る目標は頭打ちにしたうえで、目標に無理がある旨と医師への相談を表示する
+(`minIntakeKcal` / `maxSafeDailyDeficit` / `safeRequiredDailyKcal`)。
+きょうの処方箋・ふりかえりの目標ライン・あなたの逆算の3か所すべてに効かせた。
+
+下限の根拠は2つ重ねている。基礎代謝を主とするのは、本アプリ自身が座位消費を
+基礎代謝×1.2として計算している以上、それを下回る食事量を勧めるのが自己矛盾だから。
+1,200kcalは基礎代謝が小さい方のための底で、AHA/ACC/TOSの下限に合わせた
+(日本の公的資料に1,200kcalの根拠は無い。だから単独では使わない)。
+
+**2. 医師への相談を促す表示がアプリ本体に無かった(1.4.1 2つ目の箇条書き)**
+
+規約とプライバシーポリシー(シートの中)にしか無く、通常の利用動線に出てこなかった。
+オンボーディングの最初の画面、きょうの処方箋、ふりかえりのカロリー貯金、
+あなたの目標欄に常設した。
+
+**3. 極端な目標入力を止めていなかった**
+
+達成日に `min={todayStr()}` を追加。目標体重がBMI18.5未満になる場合は
+低体重にあたる旨の警告を出す(保存は妨げない)。
+
+**4. 血圧・血糖値が「手入力の記録」だと読み取りづらかった**
+
+1.4.1はセンサーだけで血圧・血糖値を測ると称するアプリを名指しで禁止している。
+本アプリは手入力のみだが、説明文・規約4項・審査メモに
+「端末のセンサーによる測定は行わない」と明示した。
+
+**問題なしと確認した点:** 1.4.2(薬用量計算機) — `Medication` に用量の項目が無く、
+服用有無のチェックのみ。1.4.3 / 1.4.4 は該当なし。
+
+### 返信文(App Store Connect に貼るもの)
+
+```
+Thank you for the review.
+
+We have added in-app citations for every health-related figure the app
+calculates, including the ones shown in the ふりかえり (Trends) tab.
+
+Where to find them:
+- ふりかえり tab: a card titled "この画面の数値について" at the bottom of the
+  tab (visible for every graph) with a link "計算式と基準値の出典を見る".
+- The same link also appears directly under the カロリー貯金 (calorie savings)
+  explanation and under the blood test reference-value table.
+- あなた tab: under BMI / estimated daily energy expenditure, and under the
+  goal calculation.
+- きょう tab: under きょうの処方箋 and under the exercise calorie estimate.
+- 設定 tab: "このアプリについて" → "数値の出典".
+
+The citation sheet lists, for each figure, the formula we use, the
+assumptions behind it, and the source with its publisher and a tappable
+link to the original document. Sources include the Japanese Ministry of
+Health, Labour and Welfare (physical activity guide 2023, dietary reference
+intakes 2025, e-Healthnet), the National Institute of Health and Nutrition
+(Compendium of Physical Activities METs table), the Japan Society of Ningen
+Dock and Preventive Medical Care (blood test reference ranges), the Japan
+Society for the Study of Obesity (BMI classification), and the peer-reviewed
+paper for the Mifflin-St Jeor equation (Am J Clin Nutr. 1990;51(2):241-247).
+
+We also corrected one figure: 1 kg of body fat is now treated as
+approximately 7,000 kcal, matching the value stated by the Ministry of
+Health, Labour and Welfare, and the citation links to that document.
+
+While addressing this, we reviewed the whole of guideline 1.4 and made two
+further safety changes on our own initiative:
+
+- The app no longer derives a daily calorie target directly from the user's
+  goal weight and target date. The suggested daily food intake is now capped
+  so that it never falls below the higher of the user's estimated basal
+  metabolic rate or 1,200 kcal/day. When a goal would require going below
+  that, the app says so and advises extending the target date and consulting
+  a doctor, instead of silently showing an extreme number.
+- The app now reminds users to consult a doctor at the points where these
+  figures are shown (onboarding, the daily suggestion, the calorie-savings
+  graph and the goal settings), not only in the Terms of Use.
+
+We would also like to confirm that blood pressure and blood glucose are
+entered manually by the user from their own measuring devices or test
+results. The app does not measure, and does not claim to measure, any of
+these values using the device sensors.
+
+The app continues to state that all figures are estimates and that it does
+not diagnose, treat or prevent any disease.
+```
 
 ## 未対応・要確認
 

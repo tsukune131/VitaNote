@@ -31,6 +31,7 @@ import {
   daysUntil,
   profileBmr,
   requiredDailyKcal,
+  safeRequiredForDay,
   stepsToKcal,
   totalKcalToGoal,
 } from '../lib/calc';
@@ -46,6 +47,7 @@ import {
 import { useChartTheme, type ChartTheme } from '../lib/chartTheme';
 import { useSwipe } from '../lib/swipe';
 import { HourlyStepsChart } from '../components/HourlyStepsChart';
+import { SourcesLink } from '../components/SourcesSheet';
 
 interface DayRow {
   d: number; // 日(1〜31)
@@ -168,17 +170,25 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     [profile.id, month],
   );
 
-  // 目標から必要1日消費カロリー(基準線)を算出
-  const required = useMemo(() => {
-    if (!raw || profile.targetWeightKg == null || !profile.targetDate) return undefined;
+  // 目標から必要1日消費カロリー(基準線)を算出。
+  // 目標に無理があると際限なく高い線になるので、食事量が下限を割らない範囲で頭打ちにする
+  const { required, requiredCapped } = useMemo(() => {
+    const none = { required: undefined, requiredCapped: false };
+    if (!raw || profile.targetWeightKg == null || !profile.targetDate) return none;
     const sorted = [...raw.allWeights].sort((a, b) => a.date.localeCompare(b.date));
     const current = sorted.at(-1)?.kg;
-    if (current == null) return undefined;
+    if (current == null) return none;
     const total = totalKcalToGoal(current, profile.targetWeightKg);
     const days = daysUntil(profile.targetDate);
     const v = requiredDailyKcal(total, days);
-    return Number.isFinite(v) && v > 0 ? v : undefined;
-  }, [raw, profile.targetWeightKg, profile.targetDate]);
+    // 基準線は日ごとの活動が決まらないので、活動なし(座位)で見た上限に合わせる。
+    // 基礎代謝が推定できず頭打ちできないときは、生の逆算値を線にせず線ごと出さない
+    const safe = safeRequiredForDay(v, profileBmr(profile, current));
+    if (safe == null) return none;
+    return safe.value > 0
+      ? { required: safe.value, requiredCapped: safe.capped }
+      : { required: undefined, requiredCapped: safe.capped };
+  }, [raw, profile.targetWeightKg, profile.targetDate, profile.heightCm, profile.birthDate, profile.sex]);
 
   const rows: DayRow[] = useMemo(() => {
     if (!raw) return [];
@@ -355,8 +365,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                 </table>
               </div>
               <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>
-                基準値は日本人間ドック学会の基準範囲の目安です。実際の基準値は検査施設・性別・年齢で
+                基準値は日本人間ドック・予防医療学会の基準範囲の目安です。実際の基準値は検査施設・性別・年齢で
                 異なるため、お手元の検査結果表の基準値をご確認ください。
+              </p>
+              <p className="source-link">
+                <SourcesLink focus="bloodTest" label="基準値の出典を見る" />
               </p>
             </div>
           ))
@@ -557,7 +570,9 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           sub={
             required != null
               ? `点線 = 1日の目標 ${Math.round(required).toLocaleString()}kcal(青 = 達成した日)`
-              : '「あなた」タブで目標を設定すると目標ラインを表示'
+              : profile.targetWeightKg != null && profile.targetDate
+                ? '目標ラインの表示には「あなた」タブの身長・生年月日・性別(任意)が必要です'
+                : '「あなた」タブで目標を設定すると目標ラインを表示'
           }
         >
           <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -591,13 +606,27 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           <p className="muted" style={{ margin: 0 }}>
             カロリー貯金は「その日に使ったカロリー(基礎代謝×1.2+歩数・運動)−
             食べたカロリー」。貯金がプラスの日は体重が減る方向で、運動を増やしても食事を抑えても貯まります。
-            貯金が約7,200kcal貯まるごとに体重が1kg減る計算です。食事と体重を記録した日に表示されます。
+            貯金が約7,000kcal貯まるごとに体重が1kg減る計算です。食事と体重を記録した日に表示されます。
           </p>
-          <p className="muted note" style={{ marginBottom: 0 }}>
-            ※体脂肪1kg = 約7,200kcalは、厚生労働省 e-ヘルスネット
-            「内臓脂肪型肥満を改善する運動」に基づく目安です。実際の減量は個人差があります。
+          {requiredCapped && (
+            <p className="muted note">
+              ※目標を達成日までに実現しようとすると1日の食事量が極端に少なくなるため、
+              目標ラインは食事量の下限(基礎代謝または1,200kcalの高い方)に合わせて頭打ちにしています。
+              達成日を延ばすか目標体重を見直すことをおすすめします。
+              <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
+            </p>
+          )}
+          <p className="muted note">
+            ※体脂肪1kg = 約7,000kcalは、厚生労働省「健康づくりのための身体活動・運動ガイド2023」に
+            基づく目安です。基礎代謝はMifflin-St Jeor式、歩数・運動の消費はMETs法による推定で、
+            実際の減量には個人差があります。
             <br />
             ※基礎代謝の推定には「あなた」タブの身長・生年月日・性別(いずれも任意)が必要です。
+            <br />
+            ※減量・食事制限・運動は、体調や持病に応じて医師にご相談のうえ行ってください。
+          </p>
+          <p className="source-link" style={{ marginBottom: 0 }}>
+            <SourcesLink focus="fatKcal" label="この計算の出典を見る" />
           </p>
         </div>
       )}
@@ -675,6 +704,18 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         </>
       )}
 
+      {/* どのグラフを見ていても出典にたどり着けるよう、ページの末尾に必ず置く
+          (App Store Reviewガイドライン1.4.1: 医学的な情報には見つけやすい出典が要る) */}
+      <div className="card">
+        <h2>この画面の数値について</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          グラフに出る基礎代謝・消費カロリー・カロリー貯金は、公的機関の資料や学術文献の計算式に
+          基づく<strong>推定値</strong>です。本アプリは医療機器ではなく、診断・治療を行うものではありません。
+        </p>
+        <p className="source-link" style={{ marginBottom: 0 }}>
+          <SourcesLink label="計算式と基準値の出典を見る" />
+        </p>
+      </div>
     </div>
   );
 }

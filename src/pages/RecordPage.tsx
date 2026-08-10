@@ -18,6 +18,7 @@ import { untrackedKcal, withItemAdded, withItemRemoved } from '../lib/mealItems'
 import { StreakSummary } from '../components/StreakSummary';
 import { TodayPrescription } from '../components/TodayPrescription';
 import { ProBadge, ProLock } from '../components/ProGate';
+import { SourcesLink } from '../components/SourcesSheet';
 import {
   dailyDeficit,
   daysUntil,
@@ -25,6 +26,7 @@ import {
   pickReferenceWeight,
   profileBmr,
   requiredDailyKcal,
+  safeRequiredForDay,
   stepsToKcal,
   totalKcalToGoal,
 } from '../lib/calc';
@@ -981,6 +983,10 @@ function ExerciseSection({ profileId, date }: { profileId: number; date: string 
         歩数以外の運動(筋トレ・水泳など)の消費カロリーを追加します。
         種目と時間を入れると消費カロリーの目安が入ります。
       </p>
+      <p className="source-link">
+        目安はメッツ表を使ったMETs法(メッツ×体重×時間×1.05)による推定です。
+        <SourcesLink focus="mets" label="出典を見る" />
+      </p>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="field exercise-name" style={{ marginBottom: 0 }}>
           内容
@@ -1101,16 +1107,20 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
   const bmrKcal = refWeight != null ? profileBmr(profile, refWeight) : undefined;
   const deficit = meal != null && bmrKcal != null ? dailyDeficit(bmrKcal, burn, intake) : undefined;
 
-  // 必要1日消費(目標設定がある場合)
+  // 必要1日消費(目標設定がある場合)。
+  // 生の逆算値は出さない。その日の基礎代謝・活動量で頭打ちにしてから表示する
+  // (同じタブの進捗カード・きょうの処方箋と数字を揃えるため)
   const latestKg = sorted.at(-1)?.kg;
-  const required =
+  const rawRequired =
     profile.targetWeightKg != null && profile.targetDate && latestKg != null
       ? requiredDailyKcal(
           totalKcalToGoal(latestKg, profile.targetWeightKg),
           daysUntil(profile.targetDate),
         )
       : undefined;
-  const showRequired = required != null && Number.isFinite(required) && required > 0;
+  const safe = safeRequiredForDay(rawRequired, bmrKcal, burn);
+  const required = safe?.value;
+  const showRequired = required != null && required > 0;
 
   return (
     <div className="card">
@@ -1174,6 +1184,27 @@ function DailySummary({ profile, date }: { profile: Profile; date: string }) {
           「あなた」タブで入力すると計算されます。
         </p>
       )}
+      {/* 頭打ちにした数字を黙って出さない。他の画面と同じ理由を同じ言葉で伝える */}
+      {safe?.capped && (
+        <p className="muted note" style={{ marginBottom: 0 }}>
+          ※この目標を達成日までに実現しようとすると、1日の食事量が安全な下限を下回ってしまいます。
+          「1日の目標との差」は、食事量がそこを下回らないところで止めた目標との差です。
+          達成日を延ばすか目標体重を見直すことをおすすめします。減量の進め方は医師にご相談ください。
+          <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
+        </p>
+      )}
+      {/* このカードは「きょう」タブで唯一いつでも描かれる。上で計算式を見せている以上、
+          出典への入口と医師相談の促しは条件を付けずにここへ置く(ガイドライン1.4.1) */}
+      <p className="muted note" style={{ marginBottom: 0 }}>
+        ※基礎代謝はMifflin-St Jeor式、歩数・運動の消費はMETs法による推定です。体脂肪1kg≒7,000kcalは
+        厚生労働省「健康づくりのための身体活動・運動ガイド2023」に基づく目安で、実際の減量には
+        個人差があります。
+        <br />
+        ※減量・食事制限・運動は、体調や持病に応じて医師にご相談のうえ行ってください。
+      </p>
+      <p className="source-link" style={{ marginBottom: 0 }}>
+        <SourcesLink focus="fatKcal" label="この計算の出典を見る" />
+      </p>
     </div>
   );
 }
