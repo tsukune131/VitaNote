@@ -17,7 +17,7 @@
  * に残す(こちらはどのみち App Store で公開されるもの)。
  */
 import sharp from 'sharp';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir, unlink } from 'node:fs/promises';
 
 /**
  * 出力する紙面。6.9インチだけが必須で、6.5インチは任意。
@@ -68,13 +68,16 @@ const BASE_SHOT_W = 900;
 const SHOTS = [
   // 1枚目は一覧で最初に目に入る。機能ではなくアプリ全体の約束を置く。
   // 「書きたいものだけでいい」は、続けられるか不安な人に向けた一番の口説き文句
-  { file: 'IMG_2422.PNG', lead: 'バラバラだった記録が、', punch: '1冊のノートに', sub: '体重・食事・お薬・健診。書きたいものだけでいい' },
+  // 1・4・5枚目は 2026-08-11 に撮り直し。1.4.1対応で入れた出典リンクと医師相談の行、
+  // 歩行の前提(時速4.0km)、血液検査の基準値(尿酸2.1〜7.0 / eGFR 60.0以上)が写っている必要がある。
+  // 2・3枚目は写っているものが変わっていないので据え置き。
+  { file: 'IMG_2484.PNG', lead: 'バラバラだった記録が、', punch: '1冊のノートに', sub: '体重・食事・お薬・健診。書きたいものだけでいい' },
   { file: 'IMG_2423.PNG', lead: '「飲んだっけ？」を、', punch: 'もう迷わない', sub: '食前・食後、週1回・月1回も。翌日も自動で引き継ぎ', top: 0.062 },
   { file: 'IMG_2430.PNG', lead: '毎朝の1行が、', punch: '1本の線になる', sub: '体重・腹囲・体脂肪率・歩数をグラフで' },
-  { file: 'IMG_2427.PNG', lead: '健康の記録が、', punch: 'そのまま予定表に', sub: '通院やジムの予定を1日1行でメモ。歩数はiPhone連携' },
+  { file: 'IMG_2485.PNG', lead: '健康の記録が、', punch: 'そのまま予定表に', sub: '通院やジムの予定を1日1行でメモ。歩数はiPhone連携' },
   // 表の下は空くが、切り詰めると表そのものが途中で切れて据わりが悪い。
   // アプリの実際の見え方でもあるので、そのまま全画面で見せる
-  { file: 'IMG_2421.PNG', lead: '健診でもらった数値も、', punch: '同じノートに', sub: '血液検査9項目と血圧・血糖値(Pro・買い切り)' },
+  { file: 'IMG_2486.PNG', lead: '健診でもらった数値も、', punch: '同じノートに', sub: '血液検査9項目と血圧・血糖値(Pro・買い切り)' },
 ];
 
 const DEFAULT_TOP = 0.045;
@@ -164,8 +167,25 @@ function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** 今回の SHOTS から作られる出力ファイル名 */
+function outNames() {
+  return SHOTS.map(
+    (s, i) => `${String(i + 1).padStart(2, '0')}-${s.file.replace(/\.PNG$/i, '')}.png`,
+  );
+}
+
 for (const { W, H, dir } of SIZES) {
   await mkdir(dir, { recursive: true });
+
+  // 出力名は元写真に紐づくので、撮り直すと前の組が残って枚数が増える。
+  // 5枚選ぶときに古いほうを掴む事故が起きるため、SHOTSに無いものはここで消す。
+  const keep = new Set(outNames());
+  for (const name of await readdir(dir)) {
+    if (name.endsWith('.png') && !keep.has(name)) {
+      await unlink(`${dir}/${name}`);
+      console.log(`removed ${dir}/${name}`);
+    }
+  }
 
   const BAND = Math.round((BASE_BAND * W) / BASE_W);
   const SHOT_W = Math.round((BASE_SHOT_W * W) / BASE_W);

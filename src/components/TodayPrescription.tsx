@@ -141,7 +141,8 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
 
       {/* 歩数・ご飯への換算はどれも推定式。数字を見せた場所から出典に行けるようにする */}
       <p className="source-link" style={{ marginBottom: 0 }}>
-        歩数への換算はMETs法、ご飯の杯数は茶碗1杯240kcalとした推定です。体調や持病に応じて、
+        {/* 換算値は定数から埋める。ここに数字を書くと定数を変えたときに食い違う */}
+        歩数への換算はMETs法、ご飯の杯数は茶碗1杯{RICE_BOWL_KCAL}kcalとした推定です。体調や持病に応じて、
         無理のない範囲で。判断に迷うときは医師にご相談ください。
         <SourcesLink focus="mets" label="出典を見る" />
       </p>
