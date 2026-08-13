@@ -53,6 +53,16 @@ platform :ios do
       readonly: true
     )
 
+    # 上げるのはビルド番号だけ。バージョン(MARKETING_VERSION)は
+    # ios/App/App.xcodeproj/project.pbxproj に手で書いてある。
+    #
+    # App Storeで公開したバージョンは「トレイン」が閉じられ、以降そのバージョンでは
+    # ビルド番号を何番にしても受け付けられなくなる:
+    #   Validation failed (409) Invalid Pre-Release Train.
+    #   The train version 'x.y' is closed for new build submissions
+    # 公開のあと最初にここを通すときは、先に MARKETING_VERSION を上げること。
+    # 新しいバージョン文字列を送ればTestFlight側にトレインが自動で作られるので、
+    # App Store Connectでの事前の作成は要らない。
     increment_build_number(
       xcodeproj: XCODEPROJ,
       build_number: next_build_number(api_key)
