@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { db, type Profile, type Sex } from '../db';
 import { ACTIVITY_LEVELS } from '../lib/calc';
+import { SourcesLink } from './SourcesSheet';
 
 interface Props {
   profile?: Profile; // 省略時は新規作成
@@ -80,6 +81,11 @@ export function ProfileForm({ profile, onSaved }: Props) {
           </select>
         </label>
       </div>
+      {/* 1.2〜1.9の係数は推定消費カロリーに直接効くので、選ぶ場所から根拠に行けるようにする */}
+      <p className="source-link">
+        係数は一般的な目安です。
+        <SourcesLink focus={['tdee']} label="計算式と出典" />
+      </p>
       <button type="submit">保存</button>
     </form>
   );

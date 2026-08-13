@@ -201,8 +201,10 @@ export interface BloodTestEntry {
 type BloodTestMetricKey = keyof Omit<BloodTestEntry, 'id' | 'profileId' | 'date'>;
 
 /** 血液検査の項目一覧(あなたタブの入力フォーム・ふりかえりの表で共用) */
-// ref は日本人間ドック学会の基準範囲を目安として表示するもの。
-// 実際の基準値は検査施設・性別・年齢で異なるため、各自の結果表に従う旨を画面に併記する。
+// ref は日本人間ドック・予防医療学会の「基準範囲」を目安として転記したもの。
+// 出所は9項目すべて https://www.ningen-dock.jp/inspection_blood/ の基準範囲で、
+// 同学会が別に公表している「判定区分(A〜E)」は使っていない(アプリは判定を行わないため)。
+// 実際の基準範囲は検査施設・性別・年齢で異なるため、各自の結果表に従う旨を画面に併記する。
 export const BLOOD_TEST_FIELDS: {
   key: BloodTestMetricKey;
   label: string;
@@ -216,7 +218,7 @@ export const BLOOD_TEST_FIELDS: {
   { key: 'ast', label: 'AST', unit: 'U/L', ref: '30以下' },
   { key: 'alt', label: 'ALT', unit: 'U/L', ref: '30以下' },
   { key: 'ggtp', label: 'γ-GTP', unit: 'U/L', ref: '50以下' },
-  // 判定区分Aは下限付き。出典どおりに転記する(低い側も「異常なし」の外に出る)
+  // 尿酸の基準範囲は下限付き。出典どおりに転記する(低い側も基準範囲の外に出る)
   { key: 'uricAcid', label: '尿酸', unit: 'mg/dL', ref: '2.1〜7.0' },
   { key: 'egfr', label: 'eGFR', unit: 'mL/分/1.73㎡', ref: '60.0以上' },
 ];

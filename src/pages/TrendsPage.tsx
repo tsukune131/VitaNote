@@ -47,7 +47,9 @@ import {
 import { useChartTheme, type ChartTheme } from '../lib/chartTheme';
 import { useSwipe } from '../lib/swipe';
 import { HourlyStepsChart } from '../components/HourlyStepsChart';
+import { InfoButton } from '../components/InfoButton';
 import { SourcesLink } from '../components/SourcesSheet';
+import { type SourceId } from '../lib/sources';
 
 interface DayRow {
   d: number; // 日(1〜31)
@@ -345,7 +347,9 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                       {tests.map((t) => (
                         <th key={t.id}>{formatDateShort(t.date)}</th>
                       ))}
-                      <th className="bloodtest-ref">基準値</th>
+                      {/* 出典が使っている語をそのまま列見出しにする。「基準範囲」は
+                          健常者集団の統計区間であって判定の閾値ではない、という含みまで持つ */}
+                      <th className="bloodtest-ref">基準範囲</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -364,12 +368,12 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                   </tbody>
                 </table>
               </div>
+              {/* 実測値と基準範囲を横に並べる、アプリが最も判定に近づく表示。
+                  審査で最も注視される画面なので、表の直下のリンクは畳まず残す */}
               <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>
-                基準値は日本人間ドック・予防医療学会の基準範囲の目安です。実際の基準値は検査施設・性別・年齢で
-                異なるため、お手元の検査結果表の基準値をご確認ください。
-              </p>
-              <p className="source-link">
-                <SourcesLink focus="bloodTest" label="基準値の出典を見る" />
+                基準範囲は検査施設・性別・年齢で異なります。お手元の結果表の値をご確認ください。
+                本アプリは判定や結果の解釈を行いません。
+                <SourcesLink focus={['bloodTest']} label="基準範囲の出典" />
               </p>
             </div>
           ))
@@ -378,6 +382,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       {chart === 'weight' && (
       <ChartCard
         title="体重・腹囲"
+        about={['bmi', 'waist']}
         sub={`左軸=体重kg・右軸=腹囲cm${
           profile.targetWeightKg != null ? `・体重目標 ${profile.targetWeightKg}kg` : ''
         }${profile.targetWaistCm != null ? `・腹囲目標 ${profile.targetWaistCm}cm` : ''}`}
@@ -496,7 +501,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       )}
 
       {chart === 'intake' && (
-      <ChartCard title="摂取カロリー" sub="朝・昼・夕・間食の1日合計(ツールチップに食事時刻を表示)">
+      <ChartCard
+        title="摂取カロリー"
+        about={['food']}
+        sub="朝・昼・夕・間食の1日合計(ツールチップに食事時刻を表示)"
+      >
         <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
@@ -551,7 +560,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       )}
 
       {chart === 'burn' && (
-      <ChartCard title="活動消費カロリー" sub="歩数からの推定+運動入力">
+      <ChartCard title="活動消費カロリー" about={['mets']} sub="歩数からの推定+運動入力">
         <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
@@ -567,12 +576,15 @@ export function TrendsPage({ profile }: { profile: Profile }) {
       {chart === 'burn' && (
         <ChartCard
           title="カロリー貯金"
+          about={['fatKcal', 'bmr', 'mets', 'intakeFloor']}
+          // 説明カードを畳んだ分、貯金の定義式は副題に前置してグラフから離さない
           sub={
-            required != null
+            '貯金 = 基礎代謝×1.2＋歩数・運動 − 摂取。' +
+            (required != null
               ? `点線 = 1日の目標 ${Math.round(required).toLocaleString()}kcal(青 = 達成した日)`
               : profile.targetWeightKg != null && profile.targetDate
                 ? '目標ラインの表示には「あなた」タブの身長・生年月日・性別(任意)が必要です'
-                : '「あなた」タブで目標を設定すると目標ラインを表示'
+                : '「あなた」タブで目標を設定すると目標ラインを表示')
           }
         >
           <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -601,32 +613,13 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           </BarChart>
         </ChartCard>
       )}
-      {chart === 'burn' && (
+      {/* 説明カードまるごとだった注記は、式をグラフの副題に、出典を見出しの ⓘ に移した。
+          頭打ちが働いているときだけは、グラフの読み方が変わるので1枚だけ出す */}
+      {chart === 'burn' && requiredCapped && (
         <div className="card">
-          <p className="muted" style={{ margin: 0 }}>
-            カロリー貯金は「その日に使ったカロリー(基礎代謝×1.2+歩数・運動)−
-            食べたカロリー」。貯金がプラスの日は体重が減る方向で、運動を増やしても食事を抑えても貯まります。
-            貯金が約7,000kcal貯まるごとに体重が1kg減る計算です。食事と体重を記録した日に表示されます。
-          </p>
-          {requiredCapped && (
-            <p className="muted note">
-              ※目標を達成日までに実現しようとすると1日の食事量が極端に少なくなるため、
-              目標ラインは食事量の下限(基礎代謝または1,200kcalの高い方)に合わせて頭打ちにしています。
-              達成日を延ばすか目標体重を見直すことをおすすめします。
-              <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
-            </p>
-          )}
-          <p className="muted note">
-            ※体脂肪1kg = 約7,000kcalは、厚生労働省「健康づくりのための身体活動・運動ガイド2023」に
-            基づく目安です。基礎代謝はMifflin-St Jeor式、歩数・運動の消費はMETs法による推定で、
-            実際の減量には個人差があります。
-            <br />
-            ※基礎代謝の推定には「あなた」タブの身長・生年月日・性別(いずれも任意)が必要です。
-            <br />
-            ※減量・食事制限・運動は、体調や持病に応じて医師にご相談のうえ行ってください。
-          </p>
-          <p className="source-link" style={{ marginBottom: 0 }}>
-            <SourcesLink focus="fatKcal" label="この計算の出典を見る" />
+          <p className="muted note" style={{ margin: 0 }}>
+            ※目標ラインは食事量の下限で頭打ちにしています。達成日を延ばすか目標体重を見直してください。
+            <SourcesLink focus={['intakeFloor']} label="下限の考え方と出典" />
           </p>
         </div>
       )}
@@ -643,7 +636,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             </div>
           )}
           {profile.trackGlucose && rows.some((r) => r.glucose != null) && (
-            <ChartCard title="血糖値" sub="単位: mg/dL">
+            <ChartCard
+              title="血糖値"
+              about={['vitals']}
+              sub="手入力の記録(アプリは測定しません)・単位: mg/dL"
+            >
               <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke={theme.grid} vertical={false} />
                 <XAxis {...xAxisProps(theme)} />
@@ -667,7 +664,11 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             </ChartCard>
           )}
           {profile.trackBloodPressure && rows.some((r) => r.systolic != null) && (
-            <ChartCard title="血圧" sub="単位: mmHg">
+            <ChartCard
+              title="血圧"
+              about={['vitals']}
+              sub="手入力の記録(アプリは測定しません)・単位: mmHg"
+            >
               <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke={theme.grid} vertical={false} />
                 <XAxis {...xAxisProps(theme)} />
@@ -701,49 +702,38 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               </LineChart>
             </ChartCard>
           )}
-          {/* 血圧・血糖値は計算値ではなく手入力の記録。測定機能と誤解されないよう明示する */}
-          <div className="card">
-            <p className="muted note" style={{ margin: 0 }}>
-              ※このグラフは、ご家庭の血圧計・血糖測定器などで測った値を「きょう」タブに
-              書き写して記録したものをそのまま並べたものです。本アプリやiPhoneのセンサーが
-              血圧・血糖値を測定することはなく、基準値の判定や結果の解釈も行いません。
-              <br />
-              ※数値の意味や治療の判断は医師にご相談ください。
-            </p>
-            <p className="source-link" style={{ marginBottom: 0 }}>
-              <SourcesLink focus="vitals" label="この画面の数値について" />
-            </p>
-          </div>
+          {/* 手入力の記録である旨は各グラフの副題へ、出典は見出しの ⓘ へ移した。
+              1.4.1が名指しする領域なので、副題からは消さない */}
         </>
       )}
 
-      {/* どのグラフを見ていても出典にたどり着けるよう、ページの末尾に必ず置く
-          (App Store Reviewガイドライン1.4.1: 医学的な情報には見つけやすい出典が要る) */}
-      <div className="card">
-        <h2>この画面の数値について</h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          この画面に出る数値は、記録した値そのものか、公的機関の資料や学術文献の計算式に
-          基づく<strong>推定値</strong>です(基礎代謝・消費カロリー・カロリー貯金は推定値、
-          体重・腹囲・血圧・血糖値・血液検査は記録した値そのもの)。
-          本アプリは医療機器ではなく、診断・治療を行うものではありません。
-          体調や持病、減量の進め方については、アプリの数値だけで判断せず医師などの専門家にご相談ください。
-        </p>
-        <p className="source-link" style={{ marginBottom: 0 }}>
-          <SourcesLink label="計算式と基準値の出典を見る" />
-        </p>
-      </div>
+      {/* 末尾の常設カードは App.tsx のフットノート1行が引き継いだ。
+          グラフを1つも描けない月でも入口が残るよう、カードではなくタブの外に置いている */}
     </div>
   );
 }
 
 /* ---------- 共通パーツ ---------- */
 
-function ChartCard({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
+function ChartCard({
+  title,
+  sub,
+  about,
+  children,
+}: {
+  title: string;
+  sub?: string;
+  /** グラフに出る数字の出典。渡すと見出しの右端に「ⓘ 出典」が出る */
+  about?: SourceId[];
+  children: ReactNode;
+}) {
   return (
     <div className="card chart-block">
       <div className="chart-title">
-        {title} {sub && <span className="chart-sub">{sub}</span>}
+        {title}
+        {about && <InfoButton about={about} label={`${title}の計算式と出典`} />}
       </div>
+      {sub && <div className="chart-sub">{sub}</div>}
       <ResponsiveContainer width="100%" height={260}>
         {children as never}
       </ResponsiveContainer>

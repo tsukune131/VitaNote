@@ -140,9 +140,10 @@ export function MedicationManager({ profileId }: { profileId: number }) {
 
       <label className="field">
         薬の名前
+        {/* 例に疾患名を出すと、記録アプリなのに疾患の管理を掲げているように読める */}
         <input
           type="text"
-          placeholder="例: 血圧の薬"
+          placeholder="例: 朝の薬"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />

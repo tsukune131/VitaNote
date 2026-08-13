@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Profile } from '../db';
 import { BloodTestManager } from '../components/BloodTestManager';
 import { ProfileForm } from '../components/ProfileForm';
+import { InfoButton } from '../components/InfoButton';
 import { SourcesLink } from '../components/SourcesSheet';
 import { todayStr } from '../lib/date';
 import {
@@ -75,7 +76,7 @@ export function YouPage({ profile }: { profile: Profile }) {
   const rawDailyKcal =
     totalKcal != null && remainDays != null ? requiredDailyKcal(totalKcal, remainDays) : undefined;
   // 逆算をそのまま出すと、達成日が近いほど食事量が極端に少ない目安になる。
-  // 「きょうの処方箋」と同じ下限で頭打ちにし、頭打ちにしたことをこの場で伝える。
+  // 「きょうの目安」と同じ下限で頭打ちにし、頭打ちにしたことをこの場で伝える。
   // 基礎代謝が推定できず頭打ちできないときは、生の逆算値に落とさず「—」にする
   const safeDaily = safeRequiredForDay(rawDailyKcal, bmrValue);
   const dailyKcal = safeDaily?.value;
@@ -105,6 +106,10 @@ export function YouPage({ profile }: { profile: Profile }) {
       <div className="card">
         <div className="card-head">
           <h2>{profile.name ? `${profile.name} さんの現在` : '現在の記録'}</h2>
+          <InfoButton
+            about={['bmi', 'bmr', 'tdee', 'waist']}
+            label="BMIと推定消費カロリーの計算式と出典"
+          />
           <button className="ghost" onClick={() => setEditing((v) => !v)}>
             {editing ? '閉じる' : '編集'}
           </button>
@@ -167,16 +172,13 @@ export function YouPage({ profile }: { profile: Profile }) {
             いずれも任意で、「編集」からいつでも入力・削除できます。入力しなくても記録機能はすべて使えます。
           </p>
         )}
-        {/* BMIの判定も推定消費カロリーも医学的な計算なので、数字のすぐ下から出典に行けるようにする */}
-        <p className="source-link" style={{ marginBottom: 0 }}>
-          BMIの判定は日本肥満学会の肥満度分類、推定消費カロリーはMifflin-St
-          Jeor式による推定です。体格や体調の評価は、この数値だけで判断せず医師にご相談ください。
-          <SourcesLink focus="bmi" label="出典を見る" />
-        </p>
       </div>
 
       <div className="card">
-        <h2>目標</h2>
+        <h2 className="head-line">
+          目標
+          <InfoButton about={['fatKcal', 'intakeFloor']} label="目標の逆算に使っている計算式と出典" />
+        </h2>
         <div className="row">
           <label className="field">
             体重(kg)
@@ -283,41 +285,33 @@ export function YouPage({ profile }: { profile: Profile }) {
         )}
         {hasGoal && totalKcal != null && (
           <p className="muted" style={{ marginBottom: 0 }}>
-            必要1日消費カロリーは、運動を増やすことでも摂取カロリーを抑えることでも達成できます。
-            日々の達成状況は「ふりかえり」タブの消費・貯金で確認できます。
+            必要1日消費カロリーは、運動を増やしても食事を抑えても達成できます。
           </p>
         )}
         {/* 頭打ちにできない数字は出さない。何を入れれば出るのかだけを伝える */}
         {hasGoal && totalKcal != null && dailyKcal == null && (
           <p className="muted note" style={{ marginBottom: 0 }}>
-            ※必要1日消費カロリーは、勧める食事量が安全な下限を下回らないか確かめてから表示します。
-            その確認には推定基礎代謝量が要るため、上の「編集」から身長・生年月日・性別
-            (いずれも任意)を入力すると計算されます。
+            ※必要1日消費カロリーは、勧める食事量が食事量の下限を下回らないか確かめてから表示します。
+            「編集」から身長・生年月日・性別(いずれも任意)を入力すると計算されます。
           </p>
         )}
-        {/* 無理な目標を黙って受け取らない。保存は妨げず、何が起きるかを伝える */}
+        {/* 無理な目標を黙って受け取らない。保存は妨げず、何が起きるかを伝える。
+            他の画面では1文に畳んだ理由と対処を、対処できる唯一のこの画面には全文で残す */}
         {safeDaily?.capped && bmrValue != null && (
           <p className="goal-warning">
             この達成日を守ろうとすると、1日の食事量が
             {Math.round(minIntakeKcal(bmrValue)).toLocaleString()}kcalを下回ってしまいます。
-            アプリが出す目安は食事量がそこを下回らないところで止めているため、
-            この目標のままでは達成日に届きません。達成日を延ばすか、目標体重を見直してください。
+            アプリの目安はそこで止めているため、この目標のままでは達成日に届きません。
+            達成日を延ばすか、目標体重を見直してください。
             減量の進め方は医師にご相談ください。
-            <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
+            <SourcesLink focus={['intakeFloor']} label="下限の考え方と出典" />
           </p>
         )}
         {targetUnderweight && (
           <p className="goal-warning">
             この目標体重はBMI{targetBmi?.toFixed(1)}で、低体重(18.5未満)にあたります。
             設定はできますが、健康を損なうおそれがあります。医師にご相談ください。
-            <SourcesLink focus="bmi" label="BMIの判定基準と出典" />
-          </p>
-        )}
-        {hasGoal && totalKcal != null && (
-          <p className="source-link">
-            体重1kgあたり7,000kcalとして逆算しています。減量・食事制限は体調や持病に応じて
-            医師にご相談のうえ行ってください。
-            <SourcesLink focus="fatKcal" label="出典を見る" />
+            <SourcesLink focus={['bmi']} label="BMIの区分と出典" />
           </p>
         )}
         {hasGoal && remainDays === 0 && totalKcal != null && totalKcal > 0 && (

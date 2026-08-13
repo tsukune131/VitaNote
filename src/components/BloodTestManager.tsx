@@ -72,14 +72,10 @@ export function BloodTestManager({ profileId }: { profileId: number }) {
       <p className="muted" style={{ marginTop: 0 }}>
         健康診断や数か月に一度の血液検査の結果を記録します。「ふりかえり」タブで年ごとの表として振り返れます。
       </p>
-      {/* 検査値を扱う画面なので、記録機能であることと出典への入口をここにも置く(ガイドライン1.4.1) */}
+      {/* 検査値を扱う画面。記録機能であることは、審査で最も注視される表示なので残す */}
       <p className="muted note" style={{ marginTop: 0 }}>
-        検査結果票の数値を書き写して記録するものです。本アプリは判定や結果の解釈を行いません。
-        数値の意味については医師にご相談ください。
-      </p>
-      <p className="source-link">
-        「ふりかえり」タブの表に併記している基準値の出典もご覧いただけます。
-        <SourcesLink focus="bloodTest" label="基準値の出典を見る" />
+        検査結果票の数値を書き写す記録です。本アプリは判定や結果の解釈を行いません。
+        <SourcesLink focus={['bloodTest']} label="基準範囲の出典" />
       </p>
 
       {/* 既に記録した結果は、Proでなくても読める・消せる。

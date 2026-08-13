@@ -5,6 +5,7 @@ import { bmi } from '../lib/calc';
 import { todayStr } from '../lib/date';
 import { LegalLink } from './LegalLink';
 import { ProfileForm } from './ProfileForm';
+import { SourcesLink } from './SourcesSheet';
 import { UsageGuide } from './UsageGuide';
 
 type Step = 'welcome' | 'profile' | 'goal' | 'guide';
@@ -84,10 +85,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           {/* 1.4.1が求める「医師に相談するよう促すこと」。規約の中だけでなく、
               最初に必ず通る画面に置く */}
           <p className="muted note">
-            本アプリは記録のための道具で、病気の診断・治療・予防を行うものではありません。
-            表示される数値は一般的な計算式による推定値です。
-            <strong>体調や持病、減量や食事制限の進め方については、アプリの数値だけで判断せず、
-            医師などの専門家にご相談ください。</strong>
+            本アプリは記録のための道具で、医療機器ではありません。表示される数値は推定値です。
+            <strong>体調や減量の進め方は医師にご相談ください。</strong>
           </p>
           <button onClick={() => setStep('profile')}>はじめる</button>
           <p className="muted" style={{ marginBottom: 0 }}>
@@ -104,7 +103,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           <p className="muted">
             入力しなくても、体重・食事・お薬などの記録はすべてお使いいただけます。
             身長・生年月日・性別・活動レベルを入れると、1日の推定消費カロリーを計算でき、
-            「きょうの処方箋」が目標までに必要な歩数やご飯の量を教えてくれます。
+            「きょうの目安」が目標までに必要な歩数やご飯の量を教えてくれます。
             あとから「あなた」タブでいつでも入力・削除できます。
           </p>
           <ProfileForm onSaved={(id) => void continueWithProfile(id)} />
@@ -175,7 +174,10 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         <div className="card">
           <h2>使い方</h2>
           <UsageGuide onboarding />
-          <p className="muted">この説明は「設定」タブからいつでも読み返せます。</p>
+          <p className="muted">
+            この説明は「設定」タブからいつでも読み返せます。
+            数値の計算式と出典は<SourcesLink label="こちら" />。
+          </p>
           <button onClick={onComplete}>はじめる</button>
         </div>
       )}

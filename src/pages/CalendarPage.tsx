@@ -11,7 +11,7 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type NoteEntry, type Profile, type StepEntry, type WeightEntry } from '../db';
 import { AutosaveNote, useAutosave } from '../components/autosave';
-import { SourcesLink } from '../components/SourcesSheet';
+import { InfoButton } from '../components/InfoButton';
 import { pickReferenceWeight, stepsToKcal, stepsToKm } from '../lib/calc';
 import {
   WEEKDAY_LABELS,
@@ -138,7 +138,11 @@ export function CalendarPage({ profile }: { profile: Profile }) {
       {/* 歩数が1日も無い月(これから来る月・使い始めの月)ではまとめを出さない */}
       {stepDays.length > 0 && (
       <div className="card">
-        <h2>この月の歩数</h2>
+        {/* 推定距離・推定消費カロリーを出しているので、見出しから出典に行けるようにする */}
+        <h2 className="head-line">
+          この月の歩数
+          <InfoButton about={['mets']} label="推定距離と消費カロリーの計算式と出典" />
+        </h2>
         <div className="stat-grid">
           <div className="stat">
             <div className="label">合計</div>
@@ -175,12 +179,6 @@ export function CalendarPage({ profile }: { profile: Profile }) {
             </div>
           </div>
         </div>
-        {/* 距離も消費カロリーも推定値。数字を見せた場所から出典に行けるようにする(ガイドライン1.4.1) */}
-        <p className="source-link" style={{ marginBottom: 0 }}>
-          距離と消費カロリーは、歩幅0.7m・時速4.0km・普通歩行3.0メッツを前提としたMETs法
-          (メッツ × 体重 × 時間 × 1.05)による推定です。歩幅と歩く速さには個人差があります。
-          <SourcesLink focus="mets" label="出典を見る" />
-        </p>
       </div>
       )}
 

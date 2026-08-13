@@ -3,7 +3,6 @@ import { type Profile } from '../db';
 import {
   RICE_BOWL_KCAL,
   daysUntil,
-  minIntakeKcal,
   requiredDailyKcal,
   safeRequiredForDay,
   stepsToKcal,
@@ -12,6 +11,7 @@ import {
 } from '../lib/calc';
 import { getRecentDayStats } from '../lib/dailyStats';
 import { prescriptionView, type PrescriptionView } from '../lib/prescription';
+import { InfoButton } from './InfoButton';
 import { SourcesLink } from './SourcesSheet';
 
 const WINDOW_DAYS = 7;
@@ -22,6 +22,10 @@ const bowls = (n: number) => `${(n / RICE_BOWL_KCAL).toFixed(1)}杯分`;
 /**
  * きょうの目標まで「あと何をすればいいか」を、歩数とご飯換算という具体的な行動に変換する。
  * 夕食が入る前は「あと何kcal食べられるか(予算)」、入った後は「達成/オーバー」を見せる。
+ *
+ * 本文は「〜できます」「〜が目安です」の直説法で書く。「〜してください」の命令形は
+ * 使わない(個別の行動指示と読まれないため)。見出しから医療を思わせる語を外した分、
+ * 本文の語調がこのカードの唯一の主張になる。
  */
 export function TodayPrescription({ profile }: { profile: Profile }) {
   const recent = useLiveQuery(
@@ -66,13 +70,12 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
 
   return (
     <div className="card">
-      <h2>きょうの処方箋</h2>
-      {/* 「処方箋」は手帳になぞらえた呼び名。規約でしか説明していないと
-          医師の処方と読まれかねないので、見出しのすぐ下でも断っておく */}
-      <p className="muted note" style={{ marginTop: 0 }}>
-        ※「処方箋」は手帳になぞらえた呼び名です。医師の処方や治療の指示ではなく、
-        あなたが設定した目標から機械的に逆算した、その日の目安です。
-      </p>
+      {/* 旧称は「きょうの処方箋」。手帳になぞらえた呼び名だと見出しの下で断る必要があり、
+          その弁解2行が紙面を占めていた。名前を結論(=目安)に寄せると弁解ごと要らなくなる */}
+      <h2 className="head-line">
+        きょうの目安
+        <InfoButton about={['mets', 'rice', 'intakeFloor']} label="きょうの目安の計算式と出典" />
+      </h2>
 
       {view.kind === 'need-record' && (
         <p className="muted" style={{ margin: 0 }}>
@@ -103,8 +106,8 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
           </p>
           <p className="muted" style={{ margin: 0 }}>
             {overSteps != null
-              ? `夕食を軽くするか、🚶 ${walk(overSteps)} 歩くと取り返せます。`
-              : '歩数だけで取り返すのは難しい量です。夕食を軽くするか、数日かけて調整しましょう。'}
+              ? `夕食を軽くするか、🚶 ${walk(overSteps)} 歩くと取り返せます(無理のない範囲で)。`
+              : '歩数だけで取り返すのは難しい量です。夕食を軽くするか、数日かけて調整する方法もあります。'}
           </p>
         </>
       )}
@@ -119,32 +122,30 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
             きょうは <strong>{kcal(view.over)} オーバー</strong>でした。
           </p>
           <p className="muted" style={{ margin: 0 }}>
-            夜に取り返すのは大変なので、明日の活動で調整しましょう。
+            夜に取り返すのは大変な量です。明日以降の活動で調整する方法もあります。
             <br />
             {overSteps != null
-              ? `歩数では🚶 ${walk(overSteps)} が目安です。無理のない範囲で体を動かしましょう。`
-              : '歩数だけで取り返すのは難しい量なので、数日かけて調整しましょう。'}
+              ? `歩数では🚶 ${walk(overSteps)} に相当します(無理のない範囲で)。`
+              : '歩数だけで取り返すのは難しい量なので、数日かけての調整が現実的です。'}
           </p>
         </>
       )}
 
-      {/* 目標に無理があるときは黙って厳しい数字を出さず、頭打ちにしたことを伝える */}
+      {/* 目標に無理があるときは黙って厳しい数字を出さず、頭打ちにしたことを伝える。
+          理由と対処の全文は、対処できる唯一の画面である「あなた」タブの目標欄に置く */}
       {safe?.capped && today?.bmr != null && (
         <p className="muted note">
-          ※この目標を達成日までに実現しようとすると、1日の食事量が
-          {Math.round(minIntakeKcal(today.bmr)).toLocaleString()}kcalを下回ってしまいます。
-          上の目安は、食事量がそこを下回らないところで止めています。
-          達成日を延ばすか目標体重を見直すことをおすすめします。
-          減量の進め方は医師にご相談ください。
+          ※この目標では達成日に届きません。上の数字は食事量の下限で止めています。
+          「あなた」タブで目標を見直せます。
         </p>
       )}
 
-      {/* 歩数・ご飯への換算はどれも推定式。数字を見せた場所から出典に行けるようにする */}
+      {/* 画面に出る「ご飯 約○杯分」「約○歩」の根拠。ガイドライン1.4.1が開示を求めるのは
+          計算方法(METs法)だけでなく、使っている値(茶碗1杯のkcal)も含む */}
       <p className="source-link" style={{ marginBottom: 0 }}>
         {/* 換算値は定数から埋める。ここに数字を書くと定数を変えたときに食い違う */}
-        歩数への換算はMETs法、ご飯の杯数は茶碗1杯{RICE_BOWL_KCAL}kcalとした推定です。体調や持病に応じて、
-        無理のない範囲で。判断に迷うときは医師にご相談ください。
-        <SourcesLink focus="mets" label="出典を見る" />
+        歩数はMETs法、ご飯は茶碗1杯{RICE_BOWL_KCAL}kcalで換算した目安です。
+        <SourcesLink focus={['mets', 'rice']} label="計算式と出典" />
       </p>
     </div>
   );

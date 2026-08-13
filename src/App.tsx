@@ -7,6 +7,7 @@ import {
   type Profile,
 } from './db';
 import { Onboarding } from './components/Onboarding';
+import { PageFootnote } from './components/PageFootnote';
 import {
   importStepsFromHealth,
   isHealthSyncEnabled,
@@ -138,6 +139,12 @@ export default function App() {
         </Suspense>
       )}
       {tab === 'settings' && <SettingsPage profile={profile} />}
+
+      {/* 推定値を出すタブには、記録が1件も無くても必ず1行が出るようにする。
+          カードの中に置くと、目標未設定や記録0件でカードごと消えて入口が失われる。
+          「設定」タブは「このアプリについて」が同じ役目を果たすので除く。
+          Suspenseの外に置くのは、ふりかえりの読み込み中でも消えないようにするため */}
+      {tab !== 'settings' && <PageFootnote />}
 
       <nav className="tabbar">
         {TABS.map((t) => (

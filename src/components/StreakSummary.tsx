@@ -4,7 +4,7 @@ import { daysUntil, requiredDailyKcal, safeRequiredForDay, totalKcalToGoal } fro
 import { getRecentDayStats } from '../lib/dailyStats';
 import { todayStr } from '../lib/date';
 import { calcStreak } from '../lib/streak';
-import { SourcesLink } from './SourcesSheet';
+import { InfoButton } from './InfoButton';
 
 const WINDOW_DAYS = 7;
 
@@ -66,7 +66,7 @@ export function StreakSummary({ profile }: { profile: Profile }) {
           daysUntil(profile.targetDate),
         )
       : undefined;
-  // 「きょうの処方箋」と同じ日・同じ活動量で頭打ちにする。
+  // 「きょうの目安」と同じ日・同じ活動量で頭打ちにする。
   // ここだけ生の逆算値を出すと、同じタブの上下で目標が食い違って見える
   const today = days.at(-1);
   const safe = safeRequiredForDay(rawRequired, today?.bmr, today?.burn);
@@ -93,6 +93,15 @@ export function StreakSummary({ profile }: { profile: Profile }) {
 
   return (
     <div className="card">
+      {/* 見出しが無いと出典ボタンの置き場所が無い。あわせて、リングの中と同じ
+          「きょうの貯金」を掲げて、画面ごとに割れていた貯金の呼び名をそろえる */}
+      <h2 className="head-line">
+        きょうの貯金
+        <InfoButton
+          about={['fatKcal', 'bmr', 'mets', 'intakeFloor']}
+          label="カロリー貯金の計算式と出典"
+        />
+      </h2>
       <div className="journal-hero">
         {percent != null && <ProgressRing percent={percent} />}
         <div className="journal-hero-info">
@@ -141,21 +150,13 @@ export function StreakSummary({ profile }: { profile: Profile }) {
           </div>
         )}
       </div>
-      {/* 頭打ちにした数字を黙って出さない。「きょうの処方箋」と同じ理由を同じ言葉で伝える */}
+      {/* 頭打ちにした数字を黙って出さない。「きょう」タブの3か所とも同じ1文にそろえる */}
       {safe?.capped && (
         <p className="muted note" style={{ marginBottom: 0 }}>
-          ※この目標を達成日までに実現しようとすると、1日の食事量が安全な下限を下回ってしまいます。
-          上の目標は、食事量がそこを下回らないところで止めた数字です。
-          達成日を延ばすか目標体重を見直すことをおすすめします。減量の進め方は医師にご相談ください。
-          <SourcesLink focus="intakeFloor" label="下限の考え方と出典" />
+          ※この目標では達成日に届きません。上の数字は食事量の下限で止めています。
+          「あなた」タブで目標を見直せます。
         </p>
       )}
-      {/* 貯金という推定値を出しているカードなので、出典と医師相談は条件を付けずに置く(1.4.1) */}
-      <p className="source-link" style={{ marginBottom: 0 }}>
-        「貯金」は 基礎代謝×1.2 + 歩数・運動の推定消費 − 摂取カロリー で求めた推定値です。
-        減量の進め方は、体調や持病に応じて医師にご相談ください。
-        <SourcesLink focus="fatKcal" label="出典を見る" />
-      </p>
     </div>
   );
 }

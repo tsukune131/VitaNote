@@ -610,33 +610,6 @@ td.calendar-col-day {
   outline-offset: 1px;
 }
 
-/* ---- きょうの処方箋 ---- */
-
-.prescription-row {
-  display: flex;
-  gap: 10px;
-}
-
-.prescription-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  padding: 10px;
-}
-
-.prescription-icon {
-  font-size: 22px;
-  line-height: 1;
-}
-
-.prescription-value {
-  font-size: 16px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---- Pro(買い切り) ---- */
 
@@ -1212,15 +1185,22 @@ input[type='search'].food-query {
 }
 
 .chart-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
   font-weight: 700;
-  margin: 2px 0 8px;
+  margin: 2px 0 4px;
 }
 
+/* 副題は式や前提を書くので長くなる。見出しと同じ行に流すと折り返しが荒れるため、
+   1行下ろして本文として組む */
 .chart-sub {
   font-size: 11px;
   color: var(--muted);
   font-weight: 400;
+  line-height: 1.6;
+  margin: 0 0 8px;
 }
 
 .import-banner {
@@ -1345,10 +1325,56 @@ body.sheet-open {
 
 /* ---- 数値の出典(シートの中身) ---- */
 
+/* 共通のことわりは本文の外(スクロールしない位置)に固定する。
+   項目を指定して開くと本文は該当箇所まで飛ぶので、中に置くと必ず読まれなくなる */
+.sheet-lede {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
 .source {
   border-top: 1px solid var(--border);
   padding-top: 10px;
   margin-top: 14px;
+}
+
+/* 閉じたときの見出しがそのまま目次になる。三角は自前の▸に置き換えて、
+   iOSとAndroidで見え方が割れないようにする */
+.source > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+
+.source > summary::-webkit-details-marker {
+  display: none;
+}
+
+.source > summary::before {
+  content: '▸';
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.source[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.source > summary h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
 }
 
 .source h3 {
@@ -1395,6 +1421,72 @@ body.sheet-open {
 .source-link {
   font-size: 12px;
   margin: 8px 0 0;
+}
+
+/* 見出しの右端に置く出典ボタン。カードの下の地の文の代わりなので、
+   紙面は食わないが「見えていない」ことにはならない大きさで組む。
+   記号だけにはしない — 灰色の丸は翻訳にも検索にもかからない */
+.info-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  /* 見た目は小さいまま、指で押せる44ptを負のマージンで確保する */
+  min-height: 44px;
+  padding: 0 2px;
+  margin-top: -13px;
+  margin-bottom: -13px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.info-btn svg {
+  width: 1.4em;
+  height: 1.4em;
+  min-width: 15px;
+  min-height: 15px;
+  flex: 0 0 auto;
+}
+
+.info-btn:active,
+.info-btn:focus-visible {
+  color: var(--accent);
+}
+
+.info-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -11px;
+  border-radius: 6px;
+}
+
+/* 見出しの中にボタンを置く行。全部の h2 を flex にすると
+   既存の見出しの折り返しまで変わるので、置いた場所にだけ付ける */
+.card h2.head-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* タブの末尾に必ず出る1行。医師相談の促しと、出典への無条件の入口を兼ねる。
+   カードの中に置くと記録0件の日に消えてしまうので、カードの外に出している */
+.page-footnote {
+  margin: 2px 0 6px;
+  padding: 8px 2px 0;
+  border-top: 1px dashed var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.page-footnote .linklike {
+  padding: 6px 2px;
+  font-size: 11px;
 }
 
 /* 無理のある目標を伝える注意書き。読み飛ばされては意味がないので、
