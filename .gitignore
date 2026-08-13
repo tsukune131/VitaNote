@@ -33,6 +33,7 @@ dist-ssr
 
 # 手元用の手順書(公開リポジトリに出さない)
 docs/
+*.md
 
 # Capacitor build artifacts
 ios/App/App/public
@@ -53,3 +54,4 @@ Gemfile.lock
 
 # ストア画像の元にした実機のスクリーンショット(手元のみ)
 photo/
+
