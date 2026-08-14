@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   db,
@@ -36,6 +36,7 @@ import {
   formatDateShort,
   isLastDayOfMonth,
   nowTimeStr,
+  rollOverDate,
   todayStr,
   weekdayOf,
 } from '../lib/date';
@@ -45,6 +46,30 @@ import { refreshReminders } from '../lib/reminderSync';
 
 export function RecordPage({ profile }: { profile: Profile }) {
   const [date, setDate] = useState(todayStr());
+
+  // アプリは前面に戻っても作り直されないので、放っておくと「きょう」の日付は
+  // 開いた瞬間のまま固まる。「きょう」タブに置いたまま日付をまたぐと、翌朝の入力が
+  // 前日の日付で保存され、しかも連続記録は途切れずに見える(進捗カードのほうは
+  // 描画のたびに todayStr() を取り直すので、画面の上下で見ている日がずれる)。
+  // 前面に戻るたびに今日を取り直して合わせる。
+  const syncedToday = useRef(date);
+  useEffect(() => {
+    const follow = () => {
+      const now = todayStr();
+      const prev = syncedToday.current;
+      if (now === prev) return;
+      syncedToday.current = now;
+      setDate((d) => rollOverDate(d, prev, now));
+    };
+
+    // 前面に戻る以外でも、他のタブから戻ってきた直後に日が変わっていることがある
+    follow();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') follow();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   return (
     <div>

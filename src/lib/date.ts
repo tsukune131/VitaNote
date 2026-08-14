@@ -16,6 +16,23 @@ export function nowTimeStr(): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/**
+ * 常駐したまま日付をまたいだときに、表示中の日をどこへ動かすか決める。
+ *
+ * アプリは前面に戻っても作り直されないので、「きょう」の日付は開いた瞬間のまま固まる。
+ * 放っておくと、翌朝の入力が前日の日付で保存されてしまう。
+ *
+ * ただし利用者が自分で過去の日を開いているときに、勝手に今日へ引き戻してはいけない。
+ * そこで「前回同期したときの今日」と見比べて、今日を見ていた人だけを連れていく。
+ *
+ * @param shown いま画面に出ている日付
+ * @param syncedToday 前回同期したときの「今日」
+ * @param now いまの「今日」
+ */
+export function rollOverDate(shown: string, syncedToday: string, now: string): string {
+  return shown === syncedToday ? now : shown;
+}
+
 /** YYYY-MM-DDにdays日を加算 */
 export function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T00:00:00');
