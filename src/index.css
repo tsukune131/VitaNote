@@ -769,7 +769,7 @@ td.calendar-col-day {
   font-variant-numeric: tabular-nums;
 }
 
-/* 基準値の列を右端に固定表示 */
+/* 基準範囲の列を右端に固定表示 */
 .bloodtest-table th.bloodtest-ref,
 .bloodtest-table td.bloodtest-ref {
   position: sticky;
