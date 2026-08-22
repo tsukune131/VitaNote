@@ -74,6 +74,13 @@ interface DayRow {
   diastolic?: number;
 }
 
+/** 傾向線つきの行。体重・腹囲・体脂肪率の最小二乗直線を各日に評価した値を持つ */
+interface DayRowWithTrend extends DayRow {
+  weightTrend?: number;
+  waistTrend?: number;
+  bodyFatTrend?: number;
+}
+
 type ChartKey = 'weight' | 'intake' | 'steps' | 'burn' | 'health' | 'bloodtest';
 
 const CHART_TABS: { key: ChartKey; label: string }[] = [
@@ -256,6 +263,23 @@ export function TrendsPage({ profile }: { profile: Profile }) {
     });
   }, [raw, month, required, profile.birthDate, profile.heightCm, profile.sex]);
 
+  // 体重・腹囲・体脂肪率の傾向線。日々の上下に埋もれがちな「増減の向き」を薄い直線で見せる
+  const rowsWithTrend: DayRowWithTrend[] = useMemo(() => {
+    const trendFn = (key: 'weight' | 'waist' | 'bodyFat') =>
+      linearTrend(
+        rows.filter((r) => r[key] != null).map((r) => ({ x: r.d, y: r[key] as number })),
+      );
+    const weightTrend = trendFn('weight');
+    const waistTrend = trendFn('waist');
+    const bodyFatTrend = trendFn('bodyFat');
+    return rows.map((r) => ({
+      ...r,
+      weightTrend: weightTrend?.(r.d),
+      waistTrend: waistTrend?.(r.d),
+      bodyFatTrend: bodyFatTrend?.(r.d),
+    }));
+  }, [rows]);
+
   const hasAnyData =
     rows.some(
       (r) =>
@@ -387,7 +411,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           profile.targetWeightKg != null ? `・体重目標 ${profile.targetWeightKg}kg` : ''
         }${profile.targetWaistCm != null ? `・腹囲目標 ${profile.targetWaistCm}cm` : ''}`}
       >
-        <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <LineChart data={rowsWithTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis
@@ -445,6 +469,33 @@ export function TrendsPage({ profile }: { profile: Profile }) {
             activeDot={{ r: 4 }}
             connectNulls
           />
+          {/* 傾向線: 実測より薄く・細く・点を打たずに重ね、主役の線と区別する */}
+          <Line
+            yAxisId="left"
+            type="linear"
+            dataKey="weightTrend"
+            name="体重の傾向"
+            stroke={theme.weight}
+            strokeOpacity={0.35}
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={false}
+            legendType="none"
+            isAnimationActive={false}
+          />
+          <Line
+            yAxisId="right"
+            type="linear"
+            dataKey="waistTrend"
+            name="腹囲の傾向"
+            stroke={theme.exercise}
+            strokeOpacity={0.35}
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={false}
+            legendType="none"
+            isAnimationActive={false}
+          />
         </LineChart>
       </ChartCard>
       )}
@@ -469,7 +520,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           title="体脂肪率"
           sub={profile.targetFatPct != null ? `点線 = 目標 ${profile.targetFatPct}%` : undefined}
         >
-          <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <LineChart data={rowsWithTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid stroke={theme.grid} vertical={false} />
             <XAxis {...xAxisProps(theme)} />
             <YAxis
@@ -495,6 +546,19 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               dot={{ r: 2, fill: theme.fat, strokeWidth: 0 }}
               activeDot={{ r: 4 }}
               connectNulls
+            />
+            {/* 傾向線: 実測より薄く・細く・点を打たずに重ねる */}
+            <Line
+              type="linear"
+              dataKey="bodyFatTrend"
+              name="体脂肪率の傾向"
+              stroke={theme.fat}
+              strokeOpacity={0.35}
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={false}
+              legendType="none"
+              isAnimationActive={false}
             />
           </LineChart>
         </ChartCard>
@@ -715,6 +779,25 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
 /* ---------- 共通パーツ ---------- */
 
+/**
+ * 最小二乗法で(x, y)点列を直線に近似し、任意のxでの値を返す関数を作る。
+ * 記録が飛び飛びでも「増減の向き」が一目で分かるよう、グラフに薄く重ねる傾向線に使う。
+ * 点が2つ未満(直線を引けない)ときはundefinedを返す。
+ */
+function linearTrend(points: { x: number; y: number }[]): ((x: number) => number) | undefined {
+  const n = points.length;
+  if (n < 2) return undefined;
+  const sumX = points.reduce((s, p) => s + p.x, 0);
+  const sumY = points.reduce((s, p) => s + p.y, 0);
+  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
+  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
+  const denom = n * sumXX - sumX * sumX;
+  if (denom === 0) return () => sumY / n; // 全点が同じx(通常起きない)の保険
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  return (x: number) => slope * x + intercept;
+}
+
 function ChartCard({
   title,
   sub,
@@ -783,10 +866,15 @@ function fmtDay(d: unknown) {
   return `${String(d ?? '')}日`;
 }
 
-/** 体重・腹囲の合成グラフ用: 系列名で単位(kg/cm)を切り替える */
-function fmtWeightWaist(value: unknown, name: unknown): [string, string] {
+/** 体重・腹囲の合成グラフ用: 系列(dataKey)で単位(kg/cm)を切り替える。傾向線も同じキー接頭辞で判定する */
+function fmtWeightWaist(
+  value: unknown,
+  name: unknown,
+  item: { dataKey?: unknown },
+): [string, string] {
   const v = typeof value === 'number' ? value.toFixed(1) : String(value ?? '');
-  return [`${v}${name === '腹囲' ? 'cm' : 'kg'}`, String(name ?? '')];
+  const isWaist = String(item?.dataKey ?? '').startsWith('waist');
+  return [`${v}${isWaist ? 'cm' : 'kg'}`, String(name ?? '')];
 }
 
 /** 摂取カロリーのツールチップ: 値に食事時刻を添える */

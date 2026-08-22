@@ -77,6 +77,15 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
         <InfoButton about={['mets', 'rice', 'intakeFloor']} label="きょうの目安の計算式と出典" />
       </h2>
 
+      {/* 歩数は記録があるかどうかに関わらず「きょうの目安」の最初の事実として出す。
+          目安が計算できない(need-record)日でも、歩数だけは分かっていれば見せる */}
+      {today?.steps != null && today.steps > 0 && (
+        <p style={{ marginTop: 0 }}>
+          きょうは <strong>{today.steps.toLocaleString()}歩</strong>歩きました(約
+          {kcal(today.stepKcal ?? 0)})
+        </p>
+      )}
+
       {view.kind === 'need-record' && (
         <p className="muted" style={{ margin: 0 }}>
           {canEstimate
@@ -87,7 +96,7 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
 
       {view.kind === 'budget-ok' && (
         <>
-          <p style={{ marginTop: 0 }}>
+          <p style={today?.steps ? undefined : { marginTop: 0 }}>
             きょうは <strong>あと {kcal(view.budget)}</strong> 食べられます(ご飯 約
             {bowls(view.budget)})。
           </p>
@@ -101,7 +110,7 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
 
       {view.kind === 'budget-over' && (
         <>
-          <p style={{ marginTop: 0 }}>
+          <p style={today?.steps ? undefined : { marginTop: 0 }}>
             いまのままだと <strong>{kcal(view.over)} オーバー</strong>します。
           </p>
           <p className="muted" style={{ margin: 0 }}>
@@ -118,7 +127,7 @@ export function TodayPrescription({ profile }: { profile: Profile }) {
 
       {view.kind === 'over' && (
         <>
-          <p style={{ marginTop: 0 }}>
+          <p style={today?.steps ? undefined : { marginTop: 0 }}>
             きょうは <strong>{kcal(view.over)} オーバー</strong>でした。
           </p>
           <p className="muted" style={{ margin: 0 }}>
