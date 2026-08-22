@@ -13,6 +13,10 @@ export interface DayStat {
   date: string;
   weight?: number;
   intake?: number;
+  /** きょうの歩数(未記録の日はundefined) */
+  steps?: number;
+  /** 歩数分の消費kcal(体重が分かる日のみ)。burnの内訳として表示用に保持する */
+  stepKcal?: number;
   burn: number;
   /** カロリー貯金(消費−摂取)。食事と体重の記録が揃っている日のみ算出 */
   deficit?: number;
@@ -71,7 +75,17 @@ export async function getRecentDayStats(profile: Profile, windowDays: number): P
       meal != null && bmrKcal != null ? dailyDeficit(bmrKcal, burn, intake ?? 0) : undefined;
 
     const dinnerLogged = meal != null && (meal.dinner > 0 || !!meal.dinnerTime);
-    days.push({ date, weight: w?.kg, intake, burn, deficit, bmr: bmrKcal, dinnerLogged });
+    days.push({
+      date,
+      weight: w?.kg,
+      intake,
+      steps: step?.total,
+      stepKcal: step ? stepKcal : undefined,
+      burn,
+      deficit,
+      bmr: bmrKcal,
+      dinnerLogged,
+    });
   }
 
   return { days, weightDates: sortedWeights.map((w) => w.date) };
