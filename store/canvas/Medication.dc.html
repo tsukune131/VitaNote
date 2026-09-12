@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: "Yu Gothic UI", Meiryo, "Hiragino Sans", sans-serif; }
+    a { color: #cf4a41; } a:hover { color: #a83a33; }
+  </style>
+</helmet>
+<div style="width: 440px; height: 956px; position: relative; overflow: hidden; background-color: #f5f5f0; background-image: repeating-linear-gradient(to right, #e7e9e2 0 1px, transparent 1px 8px), repeating-linear-gradient(to bottom, #e7e9e2 0 1px, transparent 1px 8px);">
+
+  <div style="position: absolute; left: 0; top: 0; width: 440px; height: 344px; background: #33362f;"></div>
+
+  <div style="position: absolute; left: 32px; top: 46px; width: 376px; display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 9px;">
+      <div style="width: 22px; height: 22px; border-radius: 11px; background: #cf4a41; color: #fffefb; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">2</div>
+      <div style="font-size: 12px; letter-spacing: 0.2em; color: rgba(255,254,251,0.62); font-weight: 700;">おくすりチェック</div>
+    </div>
+    <div style="font-size: 25px; font-weight: 700; color: rgba(255,254,251,0.82); margin-top: 34px;">もう「飲んだっけ？」と</div>
+    <div style="font-size: 58px; font-weight: 700; color: #fffefb; line-height: 1.1; margin-top: 8px; letter-spacing: -0.02em;">言わなくて<br>いい。</div>
+  </div>
+
+  <div style="position: absolute; left: 24px; top: 300px; width: 392px; z-index: 2;">
+    <img src="med-strips.jpg" alt="朝昼夕のお薬チェック" style="display: block; width: 392px; border-radius: 10px; border: 1px solid #e0e2da; box-shadow: 0 10px 30px rgba(51,54,47,0.20);">
+  </div>
+
+  <svg width="140" height="120" viewBox="0 0 140 120" style="position: absolute; left: 20px; top: 500px; z-index: 3;">
+    <path d="M 122 106 C 96 88, 56 62, 30 20" fill="none" stroke="#cf4a41" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M 20 44 L 28 14 L 51 30" fill="none" stroke="#cf4a41" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+
+  <div style="position: absolute; left: 154px; top: 570px; transform: rotate(-3deg); z-index: 3;">
+    <div style="font-size: 22px; font-weight: 700; color: #cf4a41; line-height: 1.35;">のこりは<br>夕食だけ</div>
+  </div>
+
+  <div style="position: absolute; left: 32px; top: 690px; width: 376px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="font-size: 22px; font-weight: 700; color: #33362f; line-height: 1.45;">飲んだら<span style="background: linear-gradient(transparent 58%, #edb54a 58%); padding: 0 2px;">タップするだけ。</span></div>
+
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <div style="display: flex; align-items: flex-start; gap: 11px;">
+        <div style="width: 7px; height: 7px; border-radius: 4px; background: #cf4a41; flex-shrink: 0; margin-top: 8px;"></div>
+        <div style="font-size: 16px; color: #33362f; line-height: 1.5;">食前・食後、週1回・月1回のお薬にも</div>
+      </div>
+      <div style="display: flex; align-items: flex-start; gap: 11px;">
+        <div style="width: 7px; height: 7px; border-radius: 4px; background: #cf4a41; flex-shrink: 0; margin-top: 8px;"></div>
+        <div style="font-size: 16px; color: #33362f; line-height: 1.5;">一度登録すれば、翌日も自動で出てきます</div>
+      </div>
+      <div style="display: flex; align-items: flex-start; gap: 11px;">
+        <div style="width: 7px; height: 7px; border-radius: 4px; background: #cf4a41; flex-shrink: 0; margin-top: 8px;"></div>
+        <div style="font-size: 16px; color: #33362f; line-height: 1.5;">お薬手帳と体重アプリを行き来しなくていい</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
