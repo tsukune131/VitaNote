@@ -55,3 +55,7 @@ Gemfile.lock
 # ストア画像の元にした実機のスクリーンショット(手元のみ)
 photo/
 
+# デザインキャンバスの組み上がり(2.8MB・エディタごと焼き込まれた生成物)。
+# store/canvas/ の *.dc.html と canvas.json から seed-canvas.mjs で作り直せる
+store/canvas/selfcarenote-store-screenshots.html
+

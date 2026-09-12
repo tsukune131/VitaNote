@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: "Yu Gothic UI", Meiryo, "Hiragino Sans", sans-serif; }
+    a { color: #cf4a41; } a:hover { color: #a83a33; }
+  </style>
+</helmet>
+<div style="width: 440px; height: 956px; position: relative; overflow: hidden; background-color: #f5f5f0; background-image: repeating-linear-gradient(to right, #e7e9e2 0 1px, transparent 1px 8px), repeating-linear-gradient(to bottom, #e7e9e2 0 1px, transparent 1px 8px);">
+
+  <div style="position: absolute; left: 0; top: 0; width: 440px; height: 344px; background: #cf4a41;"></div>
+
+  <div style="position: absolute; left: 32px; top: 46px; width: 376px; display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 9px;">
+      <div style="width: 22px; height: 22px; border-radius: 11px; background: #fffefb; color: #cf4a41; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">5</div>
+      <div style="font-size: 12px; letter-spacing: 0.2em; color: rgba(255,254,251,0.72); font-weight: 700;">SELFCARENOTE PRO</div>
+    </div>
+    <div style="font-size: 25px; font-weight: 700; color: rgba(255,254,251,0.86); margin-top: 34px;">去年の健診結果、どこですか</div>
+    <div style="font-size: 58px; font-weight: 700; color: #fffefb; line-height: 1.1; margin-top: 8px; letter-spacing: -0.02em;">もう、<br>探さない。</div>
+  </div>
+
+  <div style="position: absolute; left: 24px; top: 300px; width: 392px; z-index: 2;">
+    <img src="blood-card.jpg" alt="血液検査の表" style="display: block; width: 392px; border-radius: 10px; border: 1px solid #e0e2da; box-shadow: 0 10px 30px rgba(51,54,47,0.20);">
+  </div>
+
+  <div style="position: absolute; left: 250px; top: 262px; transform: rotate(4deg); z-index: 3;">
+    <div style="background: #edb54a; color: #33362f; border-radius: 5px; padding: 10px 15px; box-shadow: 0 4px 14px rgba(51,54,47,0.28); display: flex; flex-direction: column; align-items: center; gap: 1px;">
+      <div style="font-size: 22px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em;">買い切り</div>
+      <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em;">月額料金はありません</div>
+    </div>
+  </div>
+
+  <!-- 基準範囲の注意書きは画面写真の中に写っているので、ここには重ねない -->
+  <div style="position: absolute; left: 32px; top: 766px; width: 376px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="font-size: 22px; font-weight: 700; color: #33362f; line-height: 1.45;">血液検査<span style="background: linear-gradient(transparent 58%, #edb54a 58%); padding: 0 2px;">9項目を検査日ごとに。</span></div>
+
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <div style="display: flex; align-items: flex-start; gap: 11px;">
+        <div style="width: 7px; height: 7px; border-radius: 4px; background: #cf4a41; flex-shrink: 0; margin-top: 8px;"></div>
+        <div style="font-size: 16px; color: #33362f; line-height: 1.5;">血圧・血糖値の記録とグラフも Pro に</div>
+      </div>
+      <div style="display: flex; align-items: flex-start; gap: 11px;">
+        <div style="width: 7px; height: 7px; border-radius: 4px; background: #cf4a41; flex-shrink: 0; margin-top: 8px;"></div>
+        <div style="font-size: 16px; color: #33362f; line-height: 1.5;">一度書いた結果は、無料に戻しても読めます</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
