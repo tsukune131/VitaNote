@@ -22,7 +22,7 @@ export function HourlyStepsChart({ hourly, height = 260 }: { hourly: number[]; h
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
         <CartesianGrid stroke={theme.grid} vertical={false} />
         <XAxis
           dataKey="h"

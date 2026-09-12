@@ -411,7 +411,12 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           profile.targetWeightKg != null ? `・体重目標 ${profile.targetWeightKg}kg` : ''
         }${profile.targetWaistCm != null ? `・腹囲目標 ${profile.targetWaistCm}cm` : ''}`}
       >
-        <LineChart data={rowsWithTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        {/* accessibilityLayerを切っているのは、既定のままだとグラフのsvgに
+            tabIndex=0とrole="application"が付き、指で触るたびにWKWebView既定の
+            青いフォーカス枠が出るため。矢印キーでツールチップを動かす機能は
+            指だけで使うこのアプリでは出番がなく、枠のほうが目に付く。
+            以下のグラフもすべて同じ理由で切っている */}
+        <LineChart data={rowsWithTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis
@@ -520,7 +525,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
           title="体脂肪率"
           sub={profile.targetFatPct != null ? `点線 = 目標 ${profile.targetFatPct}%` : undefined}
         >
-          <LineChart data={rowsWithTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <LineChart data={rowsWithTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
             <CartesianGrid stroke={theme.grid} vertical={false} />
             <XAxis {...xAxisProps(theme)} />
             <YAxis
@@ -570,7 +575,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
         about={['food']}
         sub="朝・昼・夕・間食の1日合計(ツールチップに食事時刻を表示)"
       >
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis {...yAxisProps(theme)} />
@@ -586,7 +591,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
       {chart === 'intake' && (
       <ChartCard title="飲水量">
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis {...yAxisProps(theme)} />
@@ -598,7 +603,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
       {chart === 'steps' && (
       <ChartCard title="歩数">
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} onClick={barClickHandler(setStepsDate)}>
+        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false} onClick={barClickHandler(setStepsDate)}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis {...yAxisProps(theme)} />
@@ -625,7 +630,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
 
       {chart === 'burn' && (
       <ChartCard title="活動消費カロリー" about={['mets']} sub="歩数からの推定+運動入力">
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis {...xAxisProps(theme)} />
           <YAxis {...yAxisProps(theme)} />
@@ -651,7 +656,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
                 : '「あなた」タブで目標を設定すると目標ラインを表示')
           }
         >
-          <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
             <CartesianGrid stroke={theme.grid} vertical={false} />
             <XAxis {...xAxisProps(theme)} />
             <YAxis {...yAxisProps(theme)} />
@@ -705,7 +710,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               about={['vitals']}
               sub="手入力の記録(アプリは測定しません)・単位: mg/dL"
             >
-              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
                 <CartesianGrid stroke={theme.grid} vertical={false} />
                 <XAxis {...xAxisProps(theme)} />
                 <YAxis {...yAxisProps(theme)} domain={['dataMin - 10', 'dataMax + 10']} />
@@ -733,7 +738,7 @@ export function TrendsPage({ profile }: { profile: Profile }) {
               about={['vitals']}
               sub="手入力の記録(アプリは測定しません)・単位: mmHg"
             >
-              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+              <LineChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} accessibilityLayer={false}>
                 <CartesianGrid stroke={theme.grid} vertical={false} />
                 <XAxis {...xAxisProps(theme)} />
                 <YAxis {...yAxisProps(theme)} domain={['dataMin - 5', 'dataMax + 5']} />
