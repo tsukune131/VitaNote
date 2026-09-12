@@ -13,8 +13,9 @@ const PAPER = { r: 245, g: 245, b: 240 };
 
 /** 単純な切り出し */
 const JOBS = [
-  // 1枚目: 全画面(ステータスバーだけ落とす)
-  { out: 'screen-today.jpg', src: 'IMG_2493.PNG', left: 0, top: 131, width: 1206, height: 2622 - 131, w: 520, q: 72 },
+  // 1枚目: 全画面(ステータスバーだけ落とす)。
+  // IMG_2685 は貯金カードの集計を今月ぶんに変えたあとのビルドで撮り直したもの
+  { out: 'screen-today.jpg', src: 'IMG_2685.PNG', left: 0, top: 131, width: 1206, height: 2622 - 131, w: 520, q: 72 },
   // 3枚目: カレンダーの日ごとの表。通院・ジム・旅行のメモが並ぶところ
   { out: 'calendar-table.jpg', src: 'IMG_2495.PNG', left: 39, top: 1349, width: 1127, height: 1022, w: 760, q: 80 },
   // 4枚目: 体重・腹囲の二軸グラフのカードだけ。
