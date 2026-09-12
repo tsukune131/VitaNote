@@ -1,194 +1,479 @@
 /**
- * App Store 用のスクリーンショットを組み立てる。
+ * App Store 用のスクリーンショットを組み立てる(6枚)。
  *
  *   node store/make-screenshots.mjs
  *
- * photo/ に入れた実機のスクリーンショット(1206x2622 = 6.3インチ)を、
- * App Store Connect が要求する 6.9インチ枠 1320x2868 の紙面に載せ、
- * 上にキャプションの帯を置く。
+ * store/canvas/ のデザインキャンバスで決めた版面を、そのまま実寸で焼く。
+ * キャンバスは 440x956 で組んであり、ここでは k = W/440 を全部の数値に掛けている。
+ * 版面を直したいときはキャンバス側(store/canvas/*.dc.html)と両方を直すこと。
  *
- * 切り取って寸法を変えるとアップロードで弾かれるが、所定の寸法の
- * キャンバスに載せるぶんには自由。撮り直さずに枠を合わせられる。
+ * 下絵は store/canvas/*.jpg(prep-assets.mjs が photo/ から切り出したもの)。
+ * photo/ は .gitignore 対象で、実機の記録がそのまま写っているため公開しない。
+ * 下絵はコミットしてあるので、photo/ が無くてもここは回せる。
  *
- * 紙面の色と方眼は src/index.css のライトテーマに合わせてある。
- *
- * photo/ は .gitignore に入れている。実機の記録がそのまま写っているので、
- * 公開リポジトリには置かない。ストアに出す組み上がりだけを store/screenshots/
- * に残す(こちらはどのみち App Store で公開されるもの)。
+ * (2026-09-12: 生成りの紙に朱色の文字だけだった5枚組を差し替えた。旧版の
+ *  組み立て script は削除。経緯は appstore-ja.md の「## スクリーンショット」)
  */
 import sharp from 'sharp';
 import { mkdir, readdir, unlink } from 'node:fs/promises';
 
-/**
- * 出力する紙面。6.9インチだけが必須で、6.5インチは任意。
- * 6.5インチの枠にも出したいときのために両方作る。
- *
- * 6.5インチには 1242x2688 と 1284x2778 の2つが認められているが、
- * どちらか一方を5枚揃えればよい。縦横比が6.9インチに近い後者を使う
- * (帯とスクリーンショットの比率をそのまま縮められる)。
- */
+/** 6.9インチが必須。6.5インチは任意だが両方作る */
 const SIZES = [
   { W: 1320, H: 2868, dir: 'store/screenshots' },
   { W: 1284, H: 2778, dir: 'store/screenshots-65' },
 ];
 
-/** 版面の基準。ここからの比で他の寸法の余白と文字を決める */
-const BASE_W = 1320;
+/** キャンバスの版面。ここからの比で実寸に伸ばす */
+const BASE_W = 440;
 
 const PAPER = '#f5f5f0';
 const GRID = '#e7e9e2';
 const INK = '#33362f';
 const MUTED = '#8b9085';
 const ACCENT = '#cf4a41';
+const MARKER = '#edb54a';
 const CARD = '#fffefb';
 const BORDER = '#e0e2da';
+const ON_DARK = '#fffefb';
 
 const FONT = 'Yu Gothic UI, Meiryo, Hiragino Sans, sans-serif';
-
-/**
- * 帯の高さ(基準の版面での値)。スクリーンショットはこの下に置く。
- * 見出しを2行に割って大きく見せるぶん、以前より厚くとってある。
- */
-const BASE_BAND = 770;
-/**
- * 載せるスクリーンショットの幅(元は1206px)。
- * 帯を主役にしたいので、画面そのものは小さめに置いて周りに紙を残す。
- */
-const BASE_SHOT_W = 900;
-
-/**
- * lead / punch は見出しの1行目と2行目。2行に割って、言いたいほう(punch)だけを
- * 大きく朱色にする。1本の <text> の中で色を変えると版面の中央揃えが崩れるので、
- * 行ごとに分けて中央に置いている。
- *
- * top/bottom は元画像の高さに対する割合で、切り出す範囲。
- * 既定でステータスバー(時刻・電池)を落とす。アプリの中身だけを見せたいので、
- * 端末の情報は要らない。空白が続く画面は bottom で詰める。
- */
-const SHOTS = [
-  // 1枚目は一覧で最初に目に入る。機能ではなくアプリ全体の約束を置く。
-  // 「書きたいものだけでいい」は、続けられるか不安な人に向けた一番の口説き文句
-  //
-  // 1・2・4・5枚目は 2026-08-14 に撮り直し。注記を「ⓘ 出典」とタブ末尾の1行に畳んだ
-  // 改修で、カード名(きょうの処方箋→きょうの目安)・列見出し(基準値→基準範囲)・
-  // 各カードの地の文がすべて変わったため。3枚目は記録値のグラフだけなので据え置き。
-  //
-  // 切り取り位置は目分量で決めない。1206x2622(6.3インチ)ではステータスバーの文字が
-  // 119行目で終わり、120〜249行が空く。既定の0.045(=118行)はその2行手前で、
-  // 文字の下端をかすめる。撮り直した3枚は0.05(=131行)でその空きの中に落とす。
-  { file: 'IMG_2493.PNG', lead: 'バラバラだった記録が、', punch: '1冊のノートに', sub: '体重・食事・お薬・健診。書きたいものだけでいい', top: 0.05 },
-  // この1枚だけ深い。食事カードの見出しがステータスバーの真下に潜り込んでいて、
-  // 77〜148行がひとつづきの文字帯になっている。空くのはその下の149〜223行なので、
-  // ステータスバーを落とすと見出しの「食事 ⓘ 出典」も一緒に切れる。
-  // このコマの主題は朝昼夕のお薬のチェックなので、見出しは諦めてよい
-  { file: 'IMG_2494.PNG', lead: '「飲んだっけ？」を、', punch: 'もう迷わない', sub: '食前・食後、週1回・月1回も。翌日も自動で引き継ぎ', top: 0.06 },
-  { file: 'IMG_2430.PNG', lead: '毎朝の1行が、', punch: '1本の線になる', sub: '体重・腹囲・体脂肪率・歩数をグラフで' },
-  { file: 'IMG_2495.PNG', lead: '健康の記録が、', punch: 'そのまま予定表に', sub: '通院やジムの予定を1日1行でメモ。歩数はiPhone連携', top: 0.05 },
-  // 表の下は空くが、切り詰めると表そのものが途中で切れて据わりが悪い。
-  // アプリの実際の見え方でもあるので、そのまま全画面で見せる
-  { file: 'IMG_2496.PNG', lead: '健診でもらった数値も、', punch: '同じノートに', sub: '血液検査9項目と血圧・血糖値(Pro・買い切り)', top: 0.05 },
-];
-
-const DEFAULT_TOP = 0.045;
-
-/** 方眼紙の下地。24pxごとの罫線はアプリの紙面と同じ間隔 */
-function background(W, H) {
-  const lines = [];
-  for (let x = 0; x < W; x += 24) {
-    lines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${GRID}" stroke-width="1"/>`);
-  }
-  for (let y = 0; y < H; y += 24) {
-    lines.push(`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${GRID}" stroke-width="1"/>`);
-  }
-  return Buffer.from(
-    `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${W}" height="${H}" fill="${PAPER}"/>
-      ${lines.join('')}
-    </svg>`,
-  );
-}
-
-/**
- * 文字列のおおよその幅。全角は1文字ぶん、半角はその半分強で数える。
- * 添え書きを囲む札の幅を決めるだけなので、この精度で足りる。
- */
-function textWidth(s, size) {
-  let n = 0;
-  for (const ch of s) n += /[\x20-\x7e]/.test(ch) ? 0.55 : 1;
-  return n * size;
-}
-
-/**
- * 上の帯。目に入る順に、通し番号の丸 → 前置き → 言いたいこと → 添え書き。
- * 2行目だけを大きく朱色にして、紙の落ち着きは残したままメリハリを付ける。
- */
-function caption({ lead, punch, sub }, no, W, BAND) {
-  // 版面が小さいほうでは、余白も文字も同じ比で縮める
-  const k = W / BASE_W;
-  const r = (n) => Math.round(n * k);
-  const cx = W / 2;
-
-  // 添え書きの札。文字幅に合わせて左右に同じ余白を付ける
-  const subSize = r(46);
-  const padX = r(40);
-  const pillW = Math.round(textWidth(sub, subSize)) + padX * 2;
-  const pillH = r(98);
-  const pillY = r(650) - Math.round(pillH / 2);
-
-  return Buffer.from(
-    `<svg width="${W}" height="${BAND}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${r(160)}" r="${r(120)}" fill="${ACCENT}"/>
-      <text x="${cx}" y="${r(200)}" font-family="${FONT}" font-size="${r(108)}" font-weight="700"
-            fill="${PAPER}" text-anchor="middle">${no}</text>
-      <text x="${cx}" y="${r(400)}" font-family="${FONT}" font-size="${r(70)}" font-weight="600"
-            fill="${MUTED}" text-anchor="middle">${esc(lead)}</text>
-      <text x="${cx}" y="${r(530)}" font-family="${FONT}" font-size="${r(112)}" font-weight="700"
-            fill="${ACCENT}" text-anchor="middle">${esc(punch)}</text>
-      <rect x="${cx - pillW / 2}" y="${pillY}" width="${pillW}" height="${pillH}"
-            rx="${Math.round(pillH / 2)}" ry="${Math.round(pillH / 2)}"
-            fill="${CARD}" stroke="${BORDER}" stroke-width="2"/>
-      <text x="${cx}" y="${pillY + Math.round(pillH / 2 + subSize * 0.36)}" font-family="${FONT}"
-            font-size="${subSize}" fill="${INK}" text-anchor="middle">${esc(sub)}</text>
-    </svg>`,
-  );
-}
-
-/** 角丸の切り抜き。手帳に写真を貼ったように見せる */
-function roundedMask(w, h, r = 44) {
-  return Buffer.from(
-    `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${w}" height="${h}" rx="${r}" ry="${r}" fill="#fff"/>
-    </svg>`,
-  );
-}
-
-/** 角丸の縁取り(紙とスクリーンショットの境目をはっきりさせる) */
-function frame(w, h, r = 44) {
-  return Buffer.from(
-    `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" rx="${r}" ry="${r}"
-            fill="none" stroke="${BORDER}" stroke-width="2"/>
-    </svg>`,
-  );
-}
 
 function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** 今回の SHOTS から作られる出力ファイル名 */
-function outNames() {
-  return SHOTS.map(
-    (s, i) => `${String(i + 1).padStart(2, '0')}-${s.file.replace(/\.PNG$/i, '')}.png`,
+/**
+ * 文字列のおおよその幅(em単位)。全角は1、半角はその半分強で数える。
+ * マーカーの下敷きや札の幅を決めるだけなので、この精度で足りる。
+ */
+function em(s) {
+  let n = 0;
+  for (const ch of s) n += /[\x20-\x7e]/.test(ch) ? 0.55 : 1;
+  return n;
+}
+
+const width = (s, size) => em(s) * size;
+
+/**
+ * 文字列を実際に描いて、インクの幅を測る。
+ *
+ * em() の見積もりは全角=1文字で数えているが、Yu Gothic UI は括弧や
+ * カタカナをプロポーショナルで詰めるので、括弧を含む行では1割以上ずれる。
+ * 蛍光ペンの下敷きはこのずれがそのまま棒のはみ出しになるため、
+ * 下敷きを引く行だけは描いて測る(結果は使い回す)。
+ */
+const _measured = new Map();
+async function measure(text, size, weight = 400) {
+  if (text === '') return 0;
+  const key = `${weight}|${size}|${text}`;
+  const hit = _measured.get(key);
+  if (hit !== undefined) return hit;
+  const pad = Math.ceil(size);
+  const svg = Buffer.from(
+    `<svg width="${Math.ceil(width(text, size)) + pad * 4}" height="${Math.ceil(size * 2.4)}"
+          xmlns="http://www.w3.org/2000/svg">
+       <text x="${pad}" y="${size * 1.5}" font-family="${FONT}" font-size="${size}"
+             font-weight="${weight}" fill="#000">${esc(text)}</text>
+     </svg>`,
   );
+  const { info } = await sharp(svg).trim().toBuffer({ resolveWithObject: true });
+  _measured.set(key, info.width);
+  return info.width;
+}
+
+/** 幅に収まるように折る。日本語は文字単位で折れるので約物だけ避ける */
+function wrap(s, size, maxW) {
+  const lines = [];
+  let cur = '';
+  for (const ch of s) {
+    const next = cur + ch;
+    if (width(next, size) > maxW && cur !== '') {
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = next;
+    }
+  }
+  if (cur !== '') lines.push(cur);
+  return lines;
+}
+
+/* ------------------------------------------------------------------ */
+/* 各コマの中身。位置と大きさはすべて 440x956 の版面での値               */
+/* ------------------------------------------------------------------ */
+
+/** 下段の箇条書き(点+1行)を組む */
+const bullets = (top, items) => ({ kind: 'bullets', top, items });
+
+const SHOTS = [
+  {
+    out: '01-note',
+    band: ACCENT,
+    no: '1',
+    kicker: 'SELFCARENOTE',
+    lead: '体重・食事・お薬・健診',
+    punch: ['ぜんぶ、', '1冊に。'],
+    image: { file: 'screen-today.jpg', left: 70, top: 300, w: 300 },
+    badge: { left: 246, top: 250, rotate: -5, small: '記録にかかるのは', big: '1日10秒' },
+  },
+  {
+    out: '02-medicine',
+    band: INK,
+    no: '2',
+    kicker: 'おくすりチェック',
+    lead: 'もう「飲んだっけ？」と',
+    punch: ['言わなくて', 'いい。'],
+    image: { file: 'med-strips.jpg', left: 24, top: 300, w: 392 },
+    arrow: { left: 20, top: 500 },
+    scribble: { left: 154, top: 570, rotate: -3, lines: ['のこりは', '夕食だけ'] },
+    mark: { top: 690, plain: '飲んだら', marked: 'タップするだけ。' },
+    body: bullets(738, [
+      '食前・食後、週1回・月1回のお薬にも',
+      '一度登録すれば、翌日も自動で出てきます',
+      'お薬手帳と体重アプリを行き来しなくていい',
+    ]),
+  },
+  {
+    out: '03-calendar',
+    band: ACCENT,
+    no: '3',
+    kicker: 'カレンダー',
+    lead: '歩いた数も、通院の予定も',
+    punch: ['1か月が', '1ページ。'],
+    image: { file: 'calendar-table.jpg', left: 24, top: 300, w: 392 },
+    mark: { top: 690, plain: '歩数は', marked: '書かなくても入ります。' },
+    body: bullets(738, [
+      'iPhoneのヘルスケアから毎日自動で',
+      '数字をタップすれば1時間ごとの内訳も',
+      '通院やジムの予定は、先の日付にも書けます',
+    ]),
+  },
+  {
+    out: '04-graph',
+    band: INK,
+    no: '4',
+    kicker: 'ふりかえり',
+    lead: 'きのう増えた、で凹まない',
+    punch: ['見るのは', '流れだけ。'],
+    image: { file: 'graph-card.jpg', left: 24, top: 300, w: 392 },
+    mark: { top: 690, plain: '日々の上下に', marked: '近似直線を1本。' },
+    body: bullets(738, [
+      '体重と腹囲をひとつのグラフに重ねて',
+      '体脂肪率・歩数・カロリー収支のグラフも',
+      '計算式と出典はアプリの中で確認できます',
+    ]),
+  },
+  {
+    out: '05-pro',
+    band: ACCENT,
+    no: '5',
+    kicker: 'SELFCARENOTE PRO',
+    lead: '去年の健診結果、どこですか',
+    punch: ['もう、', '探さない。'],
+    image: { file: 'blood-card.jpg', left: 24, top: 300, w: 392 },
+    badge: { left: 250, top: 262, rotate: 4, big: '買い切り', small: '月額料金はありません' },
+    // 基準範囲の注意書きは画面写真の中に写っているので、ここには重ねない
+    mark: { top: 766, plain: '血液検査', marked: '9項目を検査日ごとに。' },
+    body: bullets(814, [
+      '血圧・血糖値の記録とグラフも Pro に',
+      '一度書いた結果は、無料に戻しても読めます',
+    ]),
+  },
+  {
+    out: '06-privacy',
+    band: INK,
+    no: '6',
+    kicker: 'データのゆくえ',
+    lead: '体のことを書くのだから',
+    punch: ['ぜんぶ、', 'ゼロ。'],
+    zeros: {
+      left: 24,
+      top: 300,
+      w: 392,
+      rows: [
+        ['広告', '0'],
+        ['アカウント登録', '0'],
+        ['外部への送信', '0'],
+      ],
+    },
+    seal: { left: 296, top: 636, lines: ['端末内', '完結'], rotate: -9 },
+    mark: { top: 782, plain: '書いたものは', marked: 'この端末から出ません。' },
+    note: {
+      top: 828,
+      lines: [
+        [{ t: 'App Store のプライバシー表示は' }],
+        [{ t: '「データを収集していません」', bold: true }, { t: 'です。' }],
+      ],
+    },
+    fine: { top: 890, text: '歩数や体重のヘルスケア連携も、端末の中だけで行われます。' },
+  },
+];
+
+/* ------------------------------------------------------------------ */
+
+/** 方眼紙の下地と、上のベタ塗り。1枚のSVGでまとめて描く */
+function backdrop(shot, W, H, k) {
+  const step = 8 * k;
+  const lines = [];
+  for (let x = 0; x < W; x += step) {
+    lines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${GRID}" stroke-width="1"/>`);
+  }
+  for (let y = 0; y < H; y += step) {
+    lines.push(`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${GRID}" stroke-width="1"/>`);
+  }
+  return Buffer.from(
+    `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+       <rect width="${W}" height="${H}" fill="${PAPER}"/>
+       ${lines.join('')}
+       <rect x="0" y="0" width="${W}" height="${344 * k}" fill="${shot.band}"/>
+     </svg>`,
+  );
+}
+
+/** 手書き風の矢印(2枚目・夕食の空欄を指す) */
+function arrow(k) {
+  const s = (n) => n * k;
+  return `<g transform="translate(${s(20)} ${s(500)}) scale(${k})">
+      <path d="M 122 106 C 96 88, 56 62, 30 20" fill="none" stroke="${ACCENT}"
+            stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M 20 44 L 28 14 L 51 30" fill="none" stroke="${ACCENT}"
+            stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>`;
+}
+
+/** 傾けて貼る札。上下2行で、大きいほうを big に置く */
+function badge(b, k) {
+  const s = (n) => n * k;
+  const padX = s(15);
+  const bigSize = s(b.big === '買い切り' ? 22 : 27);
+  const smallSize = s(13);
+  const w = Math.max(width(b.big, bigSize), width(b.small, smallSize)) + padX * 2;
+  const padY = s(b.big === '買い切り' ? 10 : 11);
+  const h = padY * 2 + bigSize * 1.15 + smallSize * 1.2 + s(1);
+
+  // 大きいほうが上か下かは札ごとに違う(1枚目は下、5枚目は上)
+  const bigOnTop = b.big === '買い切り';
+  const cx = w / 2;
+  const firstSize = bigOnTop ? bigSize : smallSize;
+  const secondSize = bigOnTop ? smallSize : bigSize;
+  const firstText = bigOnTop ? b.big : b.small;
+  const secondText = bigOnTop ? b.small : b.big;
+  const y1 = padY + firstSize * 0.86;
+  const y2 = y1 + secondSize * 1.05 + s(2);
+
+  return `<g transform="translate(${s(b.left)} ${s(b.top)}) rotate(${b.rotate})">
+      <rect x="0" y="0" width="${w}" height="${h}" rx="${s(5)}" ry="${s(5)}" fill="${MARKER}"/>
+      <text x="${cx}" y="${y1}" font-family="${FONT}" font-size="${firstSize}" font-weight="700"
+            fill="${INK}" text-anchor="middle">${esc(firstText)}</text>
+      <text x="${cx}" y="${y2}" font-family="${FONT}" font-size="${secondSize}" font-weight="700"
+            fill="${INK}" text-anchor="middle">${esc(secondText)}</text>
+    </g>`;
+}
+
+/** 朱印風の角判(6枚目) */
+function seal(sl, k) {
+  const s = (n) => n * k;
+  const side = s(104);
+  const size = s(27);
+  return `<g transform="translate(${s(sl.left)} ${s(sl.top)}) rotate(${sl.rotate})">
+      <rect x="0" y="0" width="${side}" height="${side}" rx="${s(7)}" ry="${s(7)}"
+            fill="${PAPER}" stroke="${ACCENT}" stroke-width="${s(4)}"/>
+      <text x="${side / 2}" y="${side / 2 - s(4)}" font-family="${FONT}" font-size="${size}"
+            font-weight="700" fill="${ACCENT}" text-anchor="middle"
+            letter-spacing="${s(1.6)}">${esc(sl.lines[0])}</text>
+      <text x="${side / 2}" y="${side / 2 + s(27)}" font-family="${FONT}" font-size="${size}"
+            font-weight="700" fill="${ACCENT}" text-anchor="middle"
+            letter-spacing="${s(1.6)}">${esc(sl.lines[1])}</text>
+    </g>`;
+}
+
+/** 広告0/登録0/送信0 のカード(6枚目) */
+function zeros(z, k) {
+  const s = (n) => n * k;
+  const padX = s(28);
+  const labelSize = s(24);
+  const numSize = s(66);
+  const rowContent = numSize * 0.9;
+  const rowH = s(26) * 2 + rowContent;
+  const cardH = s(4) + rowH * z.rows.length + s(8);
+  const parts = [
+    `<rect x="0" y="0" width="${s(z.w)}" height="${cardH}" rx="${s(10)}" ry="${s(10)}"
+           fill="${CARD}" stroke="${BORDER}" stroke-width="${Math.max(1, s(1))}"/>`,
+  ];
+  z.rows.forEach(([label, n], i) => {
+    const top = s(4) + rowH * i;
+    parts.push(
+      `<text x="${padX}" y="${top + s(26) + rowContent / 2 + labelSize * 0.36}"
+             font-family="${FONT}" font-size="${labelSize}" font-weight="700"
+             fill="${INK}">${esc(label)}</text>`,
+      `<text x="${s(z.w) - padX}" y="${top + s(26) + rowContent / 2 + numSize * 0.36}"
+             font-family="${FONT}" font-size="${numSize}" font-weight="700"
+             fill="${ACCENT}" text-anchor="end">${esc(n)}</text>`,
+    );
+    if (i < z.rows.length - 1) {
+      const y = top + rowH;
+      parts.push(
+        `<line x1="${padX}" y1="${y}" x2="${s(z.w) - padX}" y2="${y}" stroke="${BORDER}"
+               stroke-width="${Math.max(1, s(1))}" stroke-dasharray="${s(4)} ${s(4)}"/>`,
+      );
+    }
+  });
+  return `<g transform="translate(${s(z.left)} ${s(z.top)})">${parts.join('')}</g>`;
+}
+
+/** 上の見出し・下の本文など、画像より上に載るものを1枚のSVGにまとめる */
+async function overlay(shot, W, H, k) {
+  const s = (n) => n * k;
+  const onBand = shot.band === ACCENT ? ON_DARK : ON_DARK;
+  const kickerFill = shot.band === ACCENT ? 'rgba(255,254,251,0.72)' : 'rgba(255,254,251,0.62)';
+  const leadFill = shot.band === ACCENT ? 'rgba(255,254,251,0.86)' : 'rgba(255,254,251,0.82)';
+  const noBg = shot.band === ACCENT ? CARD : ACCENT;
+  const noFg = shot.band === ACCENT ? ACCENT : CARD;
+
+  const p = [];
+
+  // 通し番号と小見出し
+  p.push(
+    `<circle cx="${s(43)}" cy="${s(57)}" r="${s(11)}" fill="${noBg}"/>`,
+    `<text x="${s(43)}" y="${s(57 + 13 * 0.36)}" font-family="${FONT}" font-size="${s(13)}"
+           font-weight="700" fill="${noFg}" text-anchor="middle">${esc(shot.no)}</text>`,
+    `<text x="${s(63)}" y="${s(61.5)}" font-family="${FONT}" font-size="${s(12)}" font-weight="700"
+           fill="${kickerFill}" letter-spacing="${s(2.4)}">${esc(shot.kicker)}</text>`,
+  );
+
+  // 前置きと言いたいこと
+  p.push(
+    `<text x="${s(32)}" y="${s(125)}" font-family="${FONT}" font-size="${s(25)}" font-weight="700"
+           fill="${leadFill}">${esc(shot.lead)}</text>`,
+    `<text x="${s(32)}" y="${s(193)}" font-family="${FONT}" font-size="${s(58)}" font-weight="700"
+           fill="${onBand}" letter-spacing="${s(-1.2)}">${esc(shot.punch[0])}</text>`,
+    `<text x="${s(32)}" y="${s(257)}" font-family="${FONT}" font-size="${s(58)}" font-weight="700"
+           fill="${onBand}" letter-spacing="${s(-1.2)}">${esc(shot.punch[1])}</text>`,
+  );
+
+  if (shot.zeros) p.push(zeros(shot.zeros, k));
+  if (shot.arrow) p.push(arrow(k));
+  if (shot.seal) p.push(seal(shot.seal, k));
+  if (shot.badge) p.push(badge(shot.badge, k));
+
+  // 赤ペンの書き込み
+  if (shot.scribble) {
+    const sc = shot.scribble;
+    const size = s(22);
+    sc.lines.forEach((line, i) => {
+      p.push(
+        `<text x="${s(sc.left)}" y="${s(sc.top) + size * 0.86 + i * size * 1.35}"
+               font-family="${FONT}" font-size="${size}" font-weight="700" fill="${ACCENT}"
+               transform="rotate(${sc.rotate} ${s(sc.left)} ${s(sc.top)})">${esc(line)}</text>`,
+      );
+    });
+  }
+
+  // 蛍光ペンを引いた1行。行は1本の <text> で流し、下敷きだけ実測で置く
+  if (shot.mark) {
+    const m = shot.mark;
+    const size = s(22);
+    const y = s(m.top) + size * 0.95;
+    const x0 = s(32);
+    const inkPlain = await measure(m.plain, size, 700);
+    const inkAll = await measure(m.plain + m.marked, size, 700);
+    p.push(
+      `<rect x="${x0 + inkPlain}" y="${y - size * 0.58}" width="${inkAll - inkPlain + s(3)}"
+             height="${size * 0.7}" fill="${MARKER}"/>`,
+      `<text x="${x0}" y="${y}" font-family="${FONT}" font-size="${size}" font-weight="700"
+             fill="${INK}">${esc(m.plain + m.marked)}</text>`,
+    );
+  }
+
+  // 箇条書き
+  if (shot.body?.kind === 'bullets') {
+    const size = s(16);
+    shot.body.items.forEach((t, i) => {
+      const top = s(shot.body.top) + i * s(35);
+      p.push(
+        `<circle cx="${s(35.5)}" cy="${top + s(11.5)}" r="${s(3.5)}" fill="${ACCENT}"/>`,
+        `<text x="${s(50)}" y="${top + size * 0.95}" font-family="${FONT}" font-size="${size}"
+               fill="${INK}">${esc(t)}</text>`,
+      );
+    });
+  }
+
+  // 太字混じりの2行(6枚目)。tspan で流すので位置の計算は要らない
+  if (shot.note) {
+    const size = s(15);
+    shot.note.lines.forEach((parts, i) => {
+      const runs = parts
+        .map((part) =>
+          part.bold
+            ? `<tspan font-weight="700">${esc(part.t)}</tspan>`
+            : `<tspan>${esc(part.t)}</tspan>`,
+        )
+        .join('');
+      p.push(
+        `<text x="${s(32)}" y="${s(shot.note.top) + size * 0.95 + i * size * 1.6}"
+               font-family="${FONT}" font-size="${size}" fill="${INK}">${runs}</text>`,
+      );
+    });
+  }
+
+  // 小さい注記
+  if (shot.fine) {
+    const size = s(12);
+    wrap(shot.fine.text, size, s(376)).forEach((line, i) => {
+      p.push(
+        `<text x="${s(32)}" y="${s(shot.fine.top) + size * 0.95 + i * size * 1.6}"
+               font-family="${FONT}" font-size="${size}" fill="${MUTED}">${esc(line)}</text>`,
+      );
+    });
+  }
+
+  return Buffer.from(
+    `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${p.join('')}</svg>`,
+  );
+}
+
+/** 角丸に切り抜いて、縁を付ける */
+async function cardify(buf, w, h, k) {
+  const r = s10(k);
+  const mask = Buffer.from(
+    `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+       <rect width="${w}" height="${h}" rx="${r}" ry="${r}" fill="#fff"/>
+     </svg>`,
+  );
+  const edge = Buffer.from(
+    `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+       <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" rx="${r}" ry="${r}"
+             fill="none" stroke="${BORDER}" stroke-width="${Math.max(1, k)}"/>
+     </svg>`,
+  );
+  return sharp(buf)
+    .composite([
+      { input: mask, blend: 'dest-in' },
+      { input: edge, blend: 'over' },
+    ])
+    .png()
+    .toBuffer();
+}
+
+const s10 = (k) => Math.round(14 * k);
+
+/** ぼかした影。ベタ塗りの帯にカードが載っているので、浮きが要る */
+async function shadow(w, h, k) {
+  const r = s10(k);
+  const pad = Math.round(30 * k);
+  const svg = Buffer.from(
+    `<svg width="${w + pad * 2}" height="${h + pad * 2}" xmlns="http://www.w3.org/2000/svg">
+       <rect x="${pad}" y="${pad}" width="${w}" height="${h}" rx="${r}" ry="${r}"
+             fill="rgba(51,54,47,0.30)"/>
+     </svg>`,
+  );
+  return sharp(svg).blur(9 * k).png().toBuffer();
 }
 
 for (const { W, H, dir } of SIZES) {
   await mkdir(dir, { recursive: true });
 
-  // 出力名は元写真に紐づくので、撮り直すと前の組が残って枚数が増える。
-  // 5枚選ぶときに古いほうを掴む事故が起きるため、SHOTSに無いものはここで消す。
-  const keep = new Set(outNames());
+  const keep = new Set(SHOTS.map((s) => `${s.out}.png`));
   for (const name of await readdir(dir)) {
     if (name.endsWith('.png') && !keep.has(name)) {
       await unlink(`${dir}/${name}`);
@@ -196,55 +481,54 @@ for (const { W, H, dir } of SIZES) {
     }
   }
 
-  const BAND = Math.round((BASE_BAND * W) / BASE_W);
-  const SHOT_W = Math.round((BASE_SHOT_W * W) / BASE_W);
+  const k = W / BASE_W;
 
-  for (const [i, shot] of SHOTS.entries()) {
-    const meta = await sharp(`photo/${shot.file}`).metadata();
+  for (const shot of SHOTS) {
+    const layers = [];
 
-    // 元画像のうち使う範囲を切り出してから、幅を揃えて縮める
-    const cutTop = Math.round(meta.height * (shot.top ?? DEFAULT_TOP));
-    const cutBottom = Math.round(meta.height * (shot.bottom ?? 1));
-    const region = { left: 0, top: cutTop, width: meta.width, height: cutBottom - cutTop };
+    if (shot.image) {
+      const w = Math.round(shot.image.w * k);
+      const resized = await sharp(`store/canvas/${shot.image.file}`).resize(w).png().toBuffer();
+      const { height: h } = await sharp(resized).metadata();
+      // 影はカードより一回り大きい。紙の左端をはみ出すコマがあるので、
+      // 負の座標に置くのではなく、はみ出したぶんを切ってから置く
+      const pad = Math.round(30 * k);
+      let sh = await shadow(w, h, k);
+      let sx = Math.round(shot.image.left * k) - pad;
+      let sy = Math.round(shot.image.top * k) - pad + Math.round(7 * k);
+      {
+        const m = await sharp(sh).metadata();
+        const cutL = Math.max(0, -sx);
+        const cutT = Math.max(0, -sy);
+        const keepW = Math.min(m.width - cutL, W - Math.max(0, sx));
+        const keepH = Math.min(m.height - cutT, H - Math.max(0, sy));
+        if (cutL || cutT || keepW !== m.width || keepH !== m.height) {
+          sh = await sharp(sh)
+            .extract({ left: cutL, top: cutT, width: keepW, height: keepH })
+            .png()
+            .toBuffer();
+        }
+        sx = Math.max(0, sx);
+        sy = Math.max(0, sy);
+      }
+      layers.push({ input: sh, left: sx, top: sy });
+      layers.push({
+        input: await cardify(resized, w, h, k),
+        left: Math.round(shot.image.left * k),
+        top: Math.round(shot.image.top * k),
+      });
+    }
 
-    const resized = await sharp(`photo/${shot.file}`)
-      .extract(region)
-      .resize(SHOT_W)
-      .png()
-      .toBuffer();
+    layers.push({ input: await overlay(shot, W, H, k), top: 0, left: 0 });
 
-    const rm = await sharp(resized).metadata();
-    // 帯の下に入りきらないときは下端で切る(紙の外へ流れる見せ方)
-    const area = H - BAND - Math.round((90 * W) / BASE_W);
-    const visibleH = Math.min(rm.height, area);
-    const body =
-      visibleH === rm.height
-        ? resized
-        : await sharp(resized).extract({ left: 0, top: 0, width: SHOT_W, height: visibleH }).png().toBuffer();
-
-    const card = await sharp(body)
-      .composite([
-        { input: roundedMask(SHOT_W, visibleH), blend: 'dest-in' },
-        { input: frame(SHOT_W, visibleH), blend: 'over' },
-      ])
-      .png()
-      .toBuffer();
-
-    // 縦は帯の下の余白に対して中央。ただし空きすぎると帯と画面が離れて見えるので、
-    // 帯の直下に空ける分には上限を設ける(余った紙は下にまわす)
-    const top = BAND + Math.min(Math.round((area - visibleH) / 2), Math.round((80 * W) / BASE_W));
-
-    const out = `${dir}/${String(i + 1).padStart(2, '0')}-${shot.file.replace(/\.PNG$/i, '')}.png`;
-    await sharp(background(W, H))
-      .composite([
-        { input: caption(shot, i + 1, W, BAND), top: 0, left: 0 },
-        { input: card, top, left: Math.round((W - SHOT_W) / 2) },
-      ])
+    const out = `${dir}/${shot.out}.png`;
+    await sharp(backdrop(shot, W, H, k))
+      .composite(layers)
       .removeAlpha() // 3チャンネル(RGB)で書き出す。アルファ付きは弾かれる
       .png()
       .toFile(out);
 
     const check = await sharp(out).metadata();
-    console.log(`${out}  ${check.width}x${check.height}  ${check.channels}ch  ${shot.lead}${shot.punch}`);
+    console.log(`${out}  ${check.width}x${check.height}  ${check.channels}ch`);
   }
 }
