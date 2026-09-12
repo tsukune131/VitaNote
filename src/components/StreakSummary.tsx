@@ -38,23 +38,32 @@ function ProgressRing({ percent }: { percent: number }) {
 }
 
 export function StreakSummary({ profile }: { profile: Profile }) {
+  const todayDate = todayStr();
+  // 貯金合計と達成日数は今月ぶん、体重変化は直近7日と、行ごとに見る範囲が違う。
+  // getRecentDayStats は「今日までのN日」しか返さないので、広いほうを1回取って
+  // 下で切り分ける。月の1〜6日は今月が7日に満たないため7日ぶんが広いほうになる
+  const dayOfMonth = Number(todayDate.slice(8, 10));
+  const windowDays = Math.max(WINDOW_DAYS, dayOfMonth);
+
   const recent = useLiveQuery(
-    () => getRecentDayStats(profile, WINDOW_DAYS),
-    [profile.id, profile.heightCm, profile.sex, profile.birthDate],
+    () => getRecentDayStats(profile, windowDays),
+    [profile.id, profile.heightCm, profile.sex, profile.birthDate, windowDays],
   );
 
   if (!recent) return null;
 
   const { days, weightDates } = recent;
-  const streak = calcStreak(weightDates, todayStr());
+  const streak = calcStreak(weightDates, todayDate);
 
-  const recordedWeights = days.filter((d) => d.weight != null);
+  const recordedWeights = days.slice(-WINDOW_DAYS).filter((d) => d.weight != null);
   const weightChange =
     recordedWeights.length >= 2
       ? recordedWeights.at(-1)!.weight! - recordedWeights[0].weight!
       : undefined;
 
-  const deficits = days.filter((d): d is typeof d & { deficit: number } => d.deficit != null);
+  const deficits = days
+    .slice(-dayOfMonth)
+    .filter((d): d is typeof d & { deficit: number } => d.deficit != null);
   const totalSavings = deficits.reduce((s, d) => s + d.deficit, 0);
   const todayDeficit = days.at(-1)?.deficit;
 
@@ -134,7 +143,7 @@ export function StreakSummary({ profile }: { profile: Profile }) {
           )}
         </div>
         <div className="list-item">
-          <span className="muted">7日間の貯金合計</span>
+          <span className="muted">今月の貯金合計</span>
           {deficits.length > 0 ? (
             <strong>{Math.round(totalSavings).toLocaleString()} kcal</strong>
           ) : (
@@ -143,7 +152,7 @@ export function StreakSummary({ profile }: { profile: Profile }) {
         </div>
         {showRequired && (
           <div className="list-item">
-            <span className="muted">目標を達成できた日</span>
+            <span className="muted">今月 目標を達成できた日</span>
             <strong>
               {achievedDays} / {deficits.length}日
             </strong>
