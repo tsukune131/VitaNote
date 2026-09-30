@@ -19,8 +19,11 @@ const READ_TYPES = ['steps'] as const;
 /** 書き戻す種別 */
 const WRITE_TYPES = ['weight', 'bodyFat'] as const;
 
-/** 起動時にさかのぼって取り込む日数(前日以前は手入力を上書きしない) */
-const IMPORT_DAYS = 7;
+/**
+ * 起動時にさかのぼって取り込む日数。
+ * 途中で取り込んだ日を、しばらく開かなかったあとでもその日の最終値に直せるよう長めに取る
+ */
+const IMPORT_DAYS = 30;
 
 /** Capacitorに登録されるプラグイン名(プラグイン側のjsName) */
 const PLUGIN_NAME = 'Health';
@@ -107,9 +110,19 @@ export interface StepImportResult {
 const IMPORT_FAILED: StepImportResult = { ok: false, daysWithData: 0, daysWritten: 0 };
 
 /**
+ * ヘルスケアから取り込んだままの記録か。
+ * 取り込みは必ず時間帯別を持ち、その合計が1日の合計と一致する。手入力は時間帯別を
+ * 持たない(時間帯別がある日は合計だけの手入力もできない)ので、これで見分けられる
+ */
+function isImportedFromHealth(entry: { total: number; hourly?: number[] }): boolean {
+  return entry.hourly !== undefined && entry.hourly.reduce((a, b) => a + b, 0) === entry.total;
+}
+
+/**
  * 直近IMPORT_DAYS日分の歩数をヘルスケアから取り込む。
- * 今日は毎回上書きする(ヘルスケアの値を正とする)が、前日以前は
- * 記録が無い日だけ埋める(手入力した過去の値を消さないため)。
+ * ヘルスケアから取り込んだ日は、過去日も含めて毎回ヘルスケアの値で上書きする。
+ * 昼に開いた日の歩数がその時点の途中の値のまま残り、ヘルスケアの1日の合計と
+ * ずれてしまうため。手入力した日だけは消さずに残す。
  */
 export async function importStepsFromHealth(profileId: number): Promise<StepImportResult> {
   if (!isNativeApp()) return IMPORT_FAILED;
@@ -151,7 +164,7 @@ export async function importStepsFromHealth(profileId: number): Promise<StepImpo
 
     const existing = await db.steps.where('[profileId+date]').equals([profileId, date]).first();
     if (existing) {
-      if (date !== today) continue; // 過去日の手入力は尊重する
+      if (date !== today && !isImportedFromHealth(existing)) continue; // 過去日の手入力は尊重する
       if (existing.total === total) continue;
       await db.steps.update(existing.id, { total, hourly });
     } else {
